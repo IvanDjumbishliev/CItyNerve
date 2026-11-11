@@ -33,3 +33,7 @@ Thumbs.db
 venv/
 __pycache__/
 *.pyc
+
+# Local previews and temporary branch imports
+/artifacts/
+/data/processed/import-*/
