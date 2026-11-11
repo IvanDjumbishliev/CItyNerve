@@ -1,0 +1,352 @@
+[
+ {
+  "id": "H-01",
+  "name": "Batak",
+  "district": "\u0436.\u043a. \u041f\u0440\u043e\u0443\u0447\u0432\u0430\u043d\u0435",
+  "coord": [
+   23.03679,
+   42.61135
+  ],
+  "score": 76,
+  "depth": 0.74,
+  "mean_depth": 0.68,
+  "area_m2": 1175663,
+  "built_m2": 924433,
+  "events": 5,
+  "events_total": 51,
+  "per_year": 1.0,
+  "duration_h": 58,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 212.7,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-02",
+  "name": "Nikola Vaptsarov",
+  "district": "Batanovtsi",
+  "coord": [
+   22.95267,
+   42.59846
+  ],
+  "score": 64,
+  "depth": 0.81,
+  "mean_depth": 0.73,
+  "area_m2": 271550,
+  "built_m2": 225808,
+  "events": 5,
+  "events_total": 51,
+  "per_year": 1.0,
+  "duration_h": 59,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 299.47,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-03",
+  "name": "\u043a\u0432. \u0412\u044a\u0440\u0431\u0430 \u00b7 unnamed street",
+  "district": "\u043a\u0432. \u0412\u044a\u0440\u0431\u0430",
+  "coord": [
+   22.95061,
+   42.52563
+  ],
+  "score": 62,
+  "depth": 0.83,
+  "mean_depth": 0.74,
+  "area_m2": 11875,
+  "built_m2": 8885,
+  "events": 6,
+  "events_total": 51,
+  "per_year": 1.2,
+  "duration_h": 60,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2022-06-10",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 344.58,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-04",
+  "name": "\u043a\u0432. \u0412\u044a\u0440\u0431\u0430 \u00b7 road 6",
+  "district": "\u043a\u0432. \u0412\u044a\u0440\u0431\u0430",
+  "coord": [
+   22.94752,
+   42.51627
+  ],
+  "score": 62,
+  "depth": 0.85,
+  "mean_depth": 0.81,
+  "area_m2": 8709,
+  "built_m2": 5630,
+  "events": 6,
+  "events_total": 51,
+  "per_year": 1.2,
+  "duration_h": 60,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2022-06-10",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 367.08,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-05",
+  "name": "\u043a\u0432. \u0412\u044a\u0440\u0431\u0430 \u00b7 road 6",
+  "district": "\u043a\u0432. \u0412\u044a\u0440\u0431\u0430",
+  "coord": [
+   22.94443,
+   42.50691
+  ],
+  "score": 61,
+  "depth": 0.85,
+  "mean_depth": 0.71,
+  "area_m2": 3958,
+  "built_m2": 2463,
+  "events": 6,
+  "events_total": 51,
+  "per_year": 1.2,
+  "duration_h": 60,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2022-06-10",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 369.93,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-06",
+  "name": "Fizkulturna",
+  "district": "\u043a\u0432. \u0421\u0442\u0430\u0440\u043e \u0441\u0435\u043b\u043e",
+  "coord": [
+   22.9537,
+   42.60352
+  ],
+  "score": 58,
+  "depth": 0.76,
+  "mean_depth": 0.57,
+  "area_m2": 100545,
+  "built_m2": 78729,
+  "events": 5,
+  "events_total": 51,
+  "per_year": 1.0,
+  "duration_h": 59,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 60.62,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-07",
+  "name": "\u041a\u0430\u0431\u0440\u0430\u043d\u043e\u0432\u0430 \u043c\u0430\u0445\u0430\u043b\u0430",
+  "district": "\u041a\u0430\u0431\u0440\u0430\u043d\u043e\u0432\u0430 \u043c\u0430\u0445\u0430\u043b\u0430",
+  "coord": [
+   22.9537,
+   42.58254
+  ],
+  "score": 56,
+  "depth": 0.81,
+  "mean_depth": 0.8,
+  "area_m2": 28501,
+  "built_m2": 18737,
+  "events": 5,
+  "events_total": 51,
+  "per_year": 1.0,
+  "duration_h": 60,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 305.68,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-08",
+  "name": "Kopanitsa \u00b7 road 603",
+  "district": "Kopanitsa",
+  "coord": [
+   22.94615,
+   42.55675
+  ],
+  "score": 54,
+  "depth": 0.82,
+  "mean_depth": 0.75,
+  "area_m2": 2375,
+  "built_m2": 1759,
+  "events": 5,
+  "events_total": 51,
+  "per_year": 1.0,
+  "duration_h": 60,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 0.01,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-09",
+  "name": "\u043a\u0432. \u0412\u044a\u0440\u0431\u0430 \u00b7 road PER3124",
+  "district": "\u043a\u0432. \u0412\u044a\u0440\u0431\u0430",
+  "coord": [
+   22.94821,
+   42.53677
+  ],
+  "score": 54,
+  "depth": 0.78,
+  "mean_depth": 0.68,
+  "area_m2": 11875,
+  "built_m2": 9412,
+  "events": 5,
+  "events_total": 51,
+  "per_year": 1.0,
+  "duration_h": 60,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 0.02,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-10",
+  "name": "\u042f\u0448\u0430\u0440\u0441\u043a\u0430 \u043c\u0430\u0445\u0430\u043b\u0430 \u00b7 road 6032",
+  "district": "\u042f\u0448\u0430\u0440\u0441\u043a\u0430 \u043c\u0430\u0445\u0430\u043b\u0430",
+  "coord": [
+   22.94615,
+   42.60301
+  ],
+  "score": 53,
+  "depth": 0.81,
+  "mean_depth": 0.79,
+  "area_m2": 3167,
+  "built_m2": 968,
+  "events": 5,
+  "events_total": 51,
+  "per_year": 1.0,
+  "duration_h": 59,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 0.02,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-11",
+  "name": "\u041a\u0430\u0431\u0440\u0430\u043d\u043e\u0432\u0430 \u043c\u0430\u0445\u0430\u043b\u0430",
+  "district": "\u041a\u0430\u0431\u0440\u0430\u043d\u043e\u0432\u0430 \u043c\u0430\u0445\u0430\u043b\u0430",
+  "coord": [
+   22.94855,
+   42.58709
+  ],
+  "score": 52,
+  "depth": 0.76,
+  "mean_depth": 0.61,
+  "area_m2": 3958,
+  "built_m2": 2375,
+  "events": 5,
+  "events_total": 51,
+  "per_year": 1.0,
+  "duration_h": 60,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2021-12-09",
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 0.02,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-12",
+  "name": "Klement Gotvald",
+  "district": "\u043a\u0432. \u041c\u043e\u0448\u0438\u043d\u043e",
+  "coord": [
+   23.09378,
+   42.60857
+  ],
+  "score": 49,
+  "depth": 0.7,
+  "mean_depth": 0.39,
+  "area_m2": 67294,
+  "built_m2": 59201,
+  "events": 4,
+  "events_total": 51,
+  "per_year": 0.8,
+  "duration_h": 57,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-11-03",
+   "2024-04-17",
+   "2024-12-06",
+   "2025-05-24"
+  ],
+  "upstream_km2": 147.94,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ }
+]

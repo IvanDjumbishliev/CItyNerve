@@ -315,7 +315,10 @@ export default function FloodMap({
   dam,
   damFill,
   damActive,
+  base = "",
 }) {
+  const baseRef = useRef(base);
+  baseRef.current = base;
   const box = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
@@ -383,8 +386,14 @@ export default function FloodMap({
         /* older engines */
       }
 
-      map.addSource("streams", { type: "geojson", data: dataUrl("streams.geojson") });
-      map.addSource("icesat2", { type: "geojson", data: dataUrl("icesat2.geojson") });
+      map.addSource("streams", {
+        type: "geojson",
+        data: dataUrl(baseRef.current + "streams.geojson"),
+      });
+      map.addSource("icesat2", {
+        type: "geojson",
+        data: dataUrl(baseRef.current + "icesat2.geojson"),
+      });
       map.addSource("ponds", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -535,7 +544,9 @@ export default function FloodMap({
     const map = mapRef.current;
     if (!map || !summary) return;
     const attach = () => {
-      if (map.getSource("flood")) return;
+      if (map.getLayer("flood")) map.removeLayer("flood"); // region switched: new grid, new bounds
+      if (map.getSource("flood")) map.removeSource("flood");
+      raster.current.depth = null;
       const canvas = document.createElement("canvas");
       canvas.width = summary.grid.cols;
       canvas.height = summary.grid.rows;
@@ -573,6 +584,14 @@ export default function FloodMap({
     if (loaded.current) attach();
     else map.once("style.load", attach);
   }, [summary]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // region switch: river network and lidar tracks of the selected city
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded.current) return;
+    map.getSource("streams")?.setData(dataUrl(base + "streams.geojson"));
+    map.getSource("icesat2")?.setData(dataUrl(base + "icesat2.geojson"));
+  }, [base]);
 
   // load the depth PNG for the selected storm
   useEffect(() => {

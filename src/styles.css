@@ -2683,6 +2683,42 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ───────── city switch (Sofia / Pernik) ───────── */
+.city-switch {
+  display: flex;
+  padding: 5px;
+  gap: 4px;
+  height: 50px;
+}
+.city-switch button {
+  padding: 0 14px;
+  border-radius: 10px;
+  color: var(--text-2);
+  font-weight: 600;
+  font-size: 13px;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.city-switch button:hover {
+  color: var(--text);
+  background: var(--ink-3);
+}
+.city-switch button.is-on {
+  background: var(--water);
+  color: #03121c;
+  box-shadow: 0 6px 20px -6px rgba(79, 195, 247, 0.7);
+}
+@media (max-width: 860px) {
+  .city-switch {
+    height: 44px;
+  }
+  .city-switch button {
+    padding: 0 10px;
+    font-size: 12px;
+  }
+}
 .sun-page {
   position: relative;
   height: 100%;
