@@ -36,3 +36,13 @@ Period: `config.py` (`END_DATE`, 5 years back).
 7. Hotspots: built-up places with ≥30 cm, scored by depth, frequency over all storms and built-up area; named via OpenStreetMap Nominatim.
 
 Tunable assumptions are at the top of `model.py`. This is a screening model, not an engineering flood study.
+
+## Pernik · Studena dam-break scenario
+
+| Script | What |
+|---|---|
+| `fetch_pernik.py` | SRTM terrain + WorldCover for the Struma valley (dam → Pernik), dam wall and reservoir outline from OpenStreetMap |
+| `fetch_studena_s2.py` | Reservoir water area on every clear Sentinel-2 date (NDWI, AWS Open Data, no login) |
+| `model_dambreak.py` | Full-supply level from the shoreline, synthetic bed scaled to 25.2 Mm³ and the 55 m wall, Sentinel-2 area → level → volume per date, breach width/time (Froehlich 2008), reference peak outflow (Froehlich 1995) |
+
+The flood itself is computed live in the browser (`src/dambreak.worker.js`): a local-inertial 2D shallow-water solver (Bates et al. 2010) on the 28 m grid, starting from the lake level of the selected period. Hypothetical scenario for emergency planning, not a prediction.

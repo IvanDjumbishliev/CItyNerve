@@ -40,11 +40,27 @@ import {
   BellRing,
   Radio,
   Settings2,
+  Zap,
+  Square,
+  Timer,
+  Home,
+  Maximize2,
 } from "lucide-react";
 import HeatPage from "./HeatPage.jsx";
 import FloodMap from "./FloodMap.jsx";
 import { CITY, RISK, CAUSE, riskLevel, PIPELINE } from "./data.js";
 import { useFloodData } from "./useFloodData.js";
+import {
+  loadDam,
+  levelOn,
+  startSim,
+  stopSim,
+  pauseSim,
+  playSim,
+  setSimSpeed,
+  showMaxExtent,
+  onStats,
+} from "./damSim.js";
 import LegacyApp from "./legacy/LegacyApp.jsx";
 import "./legacy/legacy.css";
 
@@ -549,8 +565,300 @@ function HotspotDetail({ h, close }) {
   );
 }
 
-function RiskPanel({ summary, hotspots, eventIdx, selection, setSelection, open, setOpen }) {
-  const hs = selection ? hotspots.find((h) => h.id === selection.id) : null;
+/* ───────────── Studena dam ───────────── */
+const fmtClock = (t) => {
+  const s = Math.max(0, Math.round(t));
+  return `T+${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+};
+
+function FillChart({ levels, official = [], current }) {
+  const W = 300,
+    H = 64,
+    n = levels.length;
+  const t0 = new Date(levels[0].date).getTime(),
+    t1 = new Date(levels[n - 1].date).getTime();
+  const x = (d) => ((new Date(d).getTime() - t0) / (t1 - t0)) * W;
+  const y = (f) => H - 4 - (Math.min(100, f) / 100) * (H - 10);
+  const line = levels
+    .map((l, i) => `${i ? "L" : "M"}${x(l.date).toFixed(1)} ${y(l.fill_pct).toFixed(1)}`)
+    .join(" ");
+  const [hover, setHover] = useState(null);
+  const onMove = (e) => {
+    const r = e.currentTarget.getBoundingClientRect(),
+      fx = ((e.clientX - r.left) / r.width) * W;
+    let best = levels[0];
+    for (const l of levels) if (Math.abs(x(l.date) - fx) < Math.abs(x(best.date) - fx)) best = l;
+    setHover(best);
+  };
+  const show = hover ?? current;
+  return (
+    <div className="fill-chart">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        onMouseMove={onMove}
+        onMouseLeave={() => setHover(null)}
+        role="img"
+        aria-label="Reservoir fill over five years"
+      >
+        <line x1="0" x2={W} y1={y(100)} y2={y(100)} className="fc-grid" />
+        <line x1="0" x2={W} y1={y(50)} y2={y(50)} className="fc-grid" />
+        <path d={`${line} L${W} ${H} L0 ${H} Z`} className="fc-area" />
+        <path d={line} className="fc-line" vectorEffect="non-scaling-stroke" />
+        {show && (
+          <line
+            x1={x(show.date)}
+            x2={x(show.date)}
+            y1="0"
+            y2={H}
+            className="fc-cursor"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+      </svg>
+      {official
+        .filter((o) => o.date >= levels[0].date && o.date <= levels[n - 1].date)
+        .map((o) => (
+          <span
+            key={o.date}
+            className="fc-dot"
+            style={{ left: `${(x(o.date) / W) * 100}%`, top: `${y(o.fill_pct)}px` }}
+            title={`МОСВ ${fmtDay(o.date)}: ${o.volume_mm3} Mm³ (${Math.round(o.fill_pct)}%)`}
+          />
+        ))}
+      {show && (
+        <div className="fc-tip" style={{ left: `${(x(show.date) / W) * 100}%` }}>
+          {fmtDay(show.date)} · <b>{Math.round(show.fill_pct)}%</b>
+        </div>
+      )}
+      <div className="fc-axis">
+        <span>{levels[0].date.slice(0, 4)}</span>
+        <span>100% = 25.2 Mm³</span>
+        <span>{levels[n - 1].date.slice(0, 4)}</span>
+      </div>
+      <div className="fc-legend">
+        <span>
+          <i className="lg-line" />
+          Sentinel-2 (calibrated)
+        </span>
+        {official.length > 0 && (
+          <span>
+            <i className="lg-dot" />
+            МОСВ official
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DamPanel({ dam, level, periodLabel, mode, setMode, onSimulate, simActive, close }) {
+  const d = dam.dam;
+  return (
+    <div className="detail dam-detail">
+      <div className="detail-head">
+        <div>
+          <span className="eyebrow">
+            {d.name_bg} · {d.river} · since {d.in_service}
+          </span>
+          <h3>Studena Dam</h3>
+        </div>
+        <button className="icon-btn" onClick={close} aria-label="Close">
+          <X size={16} />
+        </button>
+      </div>
+      <p className="dam-sub">
+        Drinking water for Pernik. Pernik lies{" "}
+        {Math.round(
+          Math.hypot(
+            (d.coord[0] - dam.pernik.coord[0]) * 82,
+            (d.coord[1] - dam.pernik.coord[1]) * 111,
+          ),
+        )}{" "}
+        km downstream on the Struma.
+      </p>
+      <div className="detail-grid">
+        <div>
+          <span>Wall height</span>
+          <b className="mono">{d.height_m} m</b>
+        </div>
+        <div>
+          <span>Capacity</span>
+          <b className="mono">{d.capacity_mm3} Mm³</b>
+        </div>
+        <div>
+          <span>Crest (terrain)</span>
+          <b className="mono">{Math.round(d.crest_m)} m</b>
+        </div>
+        <div>
+          <span>Lake at full</span>
+          <b className="mono">{d.area_full_km2.toFixed(2)} km²</b>
+        </div>
+      </div>
+      <div className="detail-block">
+        <span className="eyebrow">Water in the lake · {periodLabel}</span>
+        <div className="fill-gauge">
+          <i style={{ width: `${Math.min(100, level.fill_pct)}%` }} />
+          <span className="mono">{Math.round(level.fill_pct)}%</span>
+        </div>
+        <div className="fill-reads">
+          <span>
+            <b className="mono">{level.volume_mm3}</b> Mm³
+          </span>
+          <span>
+            level <b className="mono">{Math.round(level.level_m)}</b> m
+          </span>
+          <span>Sentinel-2 · {fmtDay(level.date)}</span>
+        </div>
+        <FillChart levels={dam.levels} official={dam.official} current={level} />
+      </div>
+      <div className="detail-block">
+        <span className="eyebrow">Failure scenario</span>
+        <div className="seg seg-2">
+          <button className={mode === "breach" ? "is-on" : ""} onClick={() => setMode("breach")}>
+            Breach
+          </button>
+          <button
+            className={mode === "collapse" ? "is-on" : ""}
+            onClick={() => setMode("collapse")}
+          >
+            Total collapse
+          </button>
+        </div>
+        <p className="dam-sub">
+          {mode === "breach"
+            ? `A ${d.breach_width_m} m gap opens over ${Math.round(d.breach_time_s / 60)} min (Froehlich 2008).`
+            : "The whole wall fails within about a minute: worst case."}
+        </p>
+      </div>
+      <button className="simulate-btn" onClick={onSimulate} disabled={simActive}>
+        <Zap size={17} /> {simActive ? "Simulation running" : "Simulate dam failure"}
+      </button>
+      <p className="dam-note">
+        <Info size={12} /> Hypothetical scenario for emergency planning. Not a prediction: the dam
+        is monitored and operated by ВиК Перник.
+      </p>
+    </div>
+  );
+}
+
+function DamHud({ stats, dam, speed, setSpeed, paused, setPaused, onStop }) {
+  const d = dam.dam;
+  const done = stats?.done;
+  return (
+    <section className="timeline glass dam-hud" aria-label="Dam failure simulation">
+      <div className="tl-head">
+        <button
+          className="play danger"
+          onClick={() => {
+            if (paused) {
+              playSim();
+              setPaused(false);
+            } else {
+              pauseSim();
+              setPaused(true);
+            }
+          }}
+          aria-label={paused ? "Resume" : "Pause"}
+          disabled={done}
+        >
+          {paused || done ? <Play size={16} /> : <Pause size={16} />}
+        </button>
+        <div className="tl-clock">
+          <span className="mono big">{fmtClock(stats?.t ?? 0)}</span>
+          <span className="tl-sub">
+            {done
+              ? "Simulation finished · 3 h"
+              : stats?.breachPct < 1
+                ? `Breach opening ${Math.round((stats?.breachPct ?? 0) * 100)}%`
+                : "Flood wave travelling down the Struma"}
+          </span>
+        </div>
+        <div className="seg seg-3 speed">
+          {[60, 300, 900].map((v) => (
+            <button
+              key={v}
+              className={speed === v ? "is-on" : ""}
+              onClick={() => {
+                setSpeed(v);
+                setSimSpeed(v);
+              }}
+            >
+              ×{v}
+            </button>
+          ))}
+        </div>
+        {done && (
+          <button className="ghost-btn small" onClick={showMaxExtent}>
+            <Maximize2 size={14} /> Max extent
+          </button>
+        )}
+        <button className="ghost-btn small" onClick={onStop}>
+          <Square size={13} /> Stop
+        </button>
+      </div>
+      <div className="sim-stats">
+        <div>
+          <span>Released</span>
+          <b className="mono">
+            {(stats?.released ?? 0).toFixed(1)}
+            <small> / {(stats?.V0 ?? 0).toFixed(1)} Mm³</small>
+          </b>
+          <i className="mini-bar">
+            <i
+              style={{
+                width: `${Math.min(100, ((stats?.released ?? 0) / Math.max(0.01, stats?.V0 ?? 1)) * 100)}%`,
+              }}
+            />
+          </i>
+        </div>
+        <div>
+          <span>Outflow now · peak</span>
+          <b className="mono">
+            {Math.round(stats?.outflow ?? 0).toLocaleString("en")}
+            <small> · {Math.round(stats?.peakQ ?? 0).toLocaleString("en")} m³/s</small>
+          </b>
+          <em>Froehlich est. {d.qp_froehlich_m3s.toLocaleString("en")}</em>
+        </div>
+        <div>
+          <span>Flooded land</span>
+          <b className="mono">
+            {(stats?.area ?? 0).toFixed(2)}
+            <small> km²</small>
+          </b>
+          <em>max {(stats?.peakArea ?? 0).toFixed(2)}</em>
+        </div>
+        <div>
+          <span>Built-up under water</span>
+          <b className="mono">
+            {Math.round(stats?.built ?? 0)}
+            <small> ha</small>
+          </b>
+          <em>&gt;30 cm · max {Math.round(stats?.peakBuilt ?? 0)}</em>
+        </div>
+        <div className={stats?.pernikAt != null ? "alert" : ""}>
+          <span>
+            <Home size={11} /> Reaches Pernik
+          </span>
+          <b className="mono">{stats?.pernikAt != null ? fmtClock(stats.pernikAt) : "—"}</b>
+          <em>{stats?.pernikAt != null ? "built-up area >30 cm" : "not yet"}</em>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RiskPanel({
+  summary,
+  hotspots,
+  eventIdx,
+  selection,
+  setSelection,
+  open,
+  setOpen,
+  damSlot,
+}) {
+  const hs = selection?.kind === "hotspot" ? hotspots.find((h) => h.id === selection.id) : null;
   const cur = eventIdx >= 0 ? summary.events[eventIdx] : summary.max5y;
   return (
     <aside className={`lens glass ${open ? "is-open" : "is-collapsed"}`} aria-label="Flood risk">
@@ -571,6 +879,7 @@ function RiskPanel({ summary, hotspots, eventIdx, selection, setSelection, open,
             </span>
           </div>
         </div>
+        {selection?.kind === "dam" && damSlot}
         {hs && <HotspotDetail h={hs} close={() => setSelection(null)} />}
         <div className="kpi-row">
           <Kpi label="Flooded area" value={cur.flooded_km2} unit="km²" note="depth ≥10 cm" />
@@ -608,7 +917,7 @@ function RiskPanel({ summary, hotspots, eventIdx, selection, setSelection, open,
 }
 
 /* ───────────── top bar ───────────── */
-function MapTopBar({ hotspots, onSearchPick, toggleDock, toggleLens }) {
+function MapTopBar({ hotspots, onSearchPick, toggleDock, toggleLens, onDam, damReady }) {
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(false);
   const results = q
@@ -662,6 +971,12 @@ function MapTopBar({ hotspots, onSearchPick, toggleDock, toggleLens }) {
           </div>
         )}
       </div>
+      {damReady && (
+        <button className="ghost-btn glass dam-jump" onClick={onDam}>
+          <Zap size={15} />
+          <span>Pernik · Studena dam</span>
+        </button>
+      )}
       <div className="top-actions">
         <button className="ghost-btn glass mobile-only" onClick={toggleDock}>
           <SlidersHorizontal size={15} />
@@ -753,6 +1068,32 @@ function MapPage({ data }) {
     buildings: true,
     terrain: true,
   });
+  const [dam, setDam] = useState(null);
+  const [damMode, setDamMode] = useState("breach");
+  const [simActive, setSimActive] = useState(false);
+  const [simStats, setSimStats] = useState(null);
+  const [simSpeed, setSimSpeedState] = useState(300);
+  const [simPaused, setSimPaused] = useState(false);
+
+  useEffect(() => {
+    loadDam()
+      .then(setDam)
+      .catch(() => setDam(null));
+  }, []);
+  useEffect(() => {
+    let last = 0;
+    const off = onStats((st) => {
+      const now = performance.now();
+      if (!st || st.done || now - last > 200) {
+        last = now;
+        setSimStats(st);
+      }
+    });
+    return () => {
+      off();
+      stopSim();
+    };
+  }, []);
 
   const ev = summary && eventIdx >= 0 ? summary.events[eventIdx] : null;
   useEffect(() => {
@@ -769,6 +1110,17 @@ function MapPage({ data }) {
 
   useEffect(() => {
     if (!map || !selection) return;
+    if (selection.kind === "dam" && dam) {
+      map.flyTo({
+        center: dam.dam.coord,
+        zoom: 14.2,
+        pitch: 64,
+        bearing: 130,
+        duration: 2200,
+        padding: { right: window.innerWidth > 900 ? 360 : 0 },
+      });
+      return;
+    }
     const item = hotspots.find((h) => h.id === selection.id);
     if (item)
       map.flyTo({
@@ -784,6 +1136,43 @@ function MapPage({ data }) {
   const factor = ev ? (ev.level[hour] ?? 0) : 1;
   const png = summary ? (ev ? ev.png : summary.max5y.png) : null;
 
+  const damLevel = dam ? levelOn(ev ? ev.start : null) : null;
+  const periodLabel = ev ? `storm of ${fmtDay(ev.start)}` : "highest in 5 years";
+  const runSim = () => {
+    if (!dam || !damLevel) return;
+    setSimStats(null);
+    setSimPaused(false);
+    setSimActive(true);
+    setPlaying(false);
+    startSim({ level: damLevel.level_m, mode: damMode, speed: simSpeed });
+    map?.flyTo({
+      center: [23.088, 42.568],
+      zoom: 12.2,
+      pitch: 56,
+      bearing: -48,
+      duration: 2600,
+      padding: { right: window.innerWidth > 900 ? 360 : 0, bottom: 170, top: 60 },
+    });
+  };
+  const endSim = () => {
+    stopSim();
+    setSimActive(false);
+    setSimStats(null);
+  };
+  const damSlot =
+    dam && damLevel ? (
+      <DamPanel
+        dam={dam}
+        level={damLevel}
+        periodLabel={periodLabel}
+        mode={damMode}
+        setMode={setDamMode}
+        onSimulate={runSim}
+        simActive={simActive}
+        close={() => setSelection(null)}
+      />
+    ) : null;
+
   return (
     <div className="map-page">
       <FloodMap
@@ -795,6 +1184,9 @@ function MapPage({ data }) {
         selectedId={selection?.id}
         onSelect={setSelection}
         onReady={setMap}
+        dam={dam}
+        damFill={damLevel?.fill_pct}
+        damActive={simActive}
       />
       <div className="map-vignette" aria-hidden="true" />
       <MapTopBar
@@ -802,6 +1194,11 @@ function MapPage({ data }) {
         onSearchPick={(id) => setSelection({ kind: "hotspot", id })}
         toggleDock={() => setDockOpen((o) => !o)}
         toggleLens={() => setLensOpen((o) => !o)}
+        damReady={!!dam}
+        onDam={() => {
+          setSelection({ kind: "dam", id: "dam" });
+          setLensOpen(true);
+        }}
       />
       {summary ? (
         <>
@@ -822,9 +1219,20 @@ function MapPage({ data }) {
             setSelection={setSelection}
             open={lensOpen}
             setOpen={setLensOpen}
+            damSlot={damSlot}
           />
           <CameraControls map={map} />
-          {ev ? (
+          {simActive && dam ? (
+            <DamHud
+              stats={simStats}
+              dam={dam}
+              speed={simSpeed}
+              setSpeed={setSimSpeedState}
+              paused={simPaused}
+              setPaused={setSimPaused}
+              onStop={endSim}
+            />
+          ) : ev ? (
             <EventTimeline
               ev={ev}
               hour={hour}
@@ -1005,6 +1413,24 @@ function SourcesPage({ data }) {
       role: `Built-up, vegetation and water at 10 m → runoff curve numbers. ${Math.round(summary.landcover.built_share * 100)}% of the area is built-up.`,
       res: "10 m",
       cadence: "2021",
+    },
+    {
+      kind: "Reservoir",
+      name: "Sentinel-2 L2A · Studena",
+      agency: "ESA Copernicus · AWS Open Data",
+      status: "live",
+      role: "Water surface of the Studena reservoir on every clear day 2022–2026 (NDWI), converted to volume and level.",
+      res: "10 m",
+      cadence: "~5 days",
+    },
+    {
+      kind: "Official",
+      name: "МОСВ monthly bulletins",
+      agency: "Ministry of Environment and Water",
+      status: "live",
+      role: "Official Studena volumes used to calibrate the satellite level (error ≈1.2 Mm³).",
+      res: "Reservoir",
+      cadence: "Monthly",
     },
     {
       kind: "Soil",
