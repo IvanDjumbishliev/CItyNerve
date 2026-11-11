@@ -4026,3 +4026,29 @@ button {
   opacity: 0.5;
   cursor: default;
 }
+.parking-pin {
+  padding: 6px 9px;
+  border: 2px solid white;
+  border-radius: 16px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+.parking-row {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 7px 0;
+}
+.parking-row[aria-pressed="true"] {
+  outline: 2px solid #6ed3ed;
+}
+.sun-inspector input {
+  max-width: 100%;
+  padding: 9px;
+  background: #233440;
+  border: 1px solid #53616b;
+  border-radius: 5px;
+  color: white;
+}

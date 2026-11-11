@@ -46,6 +46,7 @@ import {
   Home,
   Maximize2,
 } from "lucide-react";
+import MobilityPage from "./MobilityPage.jsx";
 import HeatPage from "./HeatPage.jsx";
 import FloodMap from "./FloodMap.jsx";
 import { CITY, REGIONS, RISK, CAUSE, riskLevel, PIPELINE } from "./data.js";
@@ -1452,8 +1453,9 @@ export default function App() {
         {page === "register" && <RegisterPage data={data} />}
         {page === "sources" && <SourcesPage data={data} />}
         {page === "l-heat" && <HeatPage />}
+        {page === "l-mobility" && <MobilityPage />}
         {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
-        {page !== "l-heat" && page.startsWith("l-") && (
+        {page !== "l-heat" && page !== "l-mobility" && page.startsWith("l-") && (
           <LegacyApp
             page={page.slice(2)}
             setPage={(id) => setPage(id === "fog" ? "fog-map" : "l-" + id)}
