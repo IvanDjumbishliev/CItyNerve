@@ -79,3 +79,7 @@ This starter is not intended for safety-critical operations, official flood or f
 Mobility uses operator-reported availability for six Sofia facilities and Basel-Stadt parking data (CC BY 4.0). Sofia supplies neither capacity nor measurement timestamps; its catalog leaves reuse licensing unspecified. Confirm operator reuse terms for public deployment. Basel records with impossible counts are omitted.
 
 Run npm run dev for development. For production run npm run build followed by npm start (Node 20+). PORT defaults to 3000. The Node server supplies the same /api/parking/{city} adapters used by Vite. A purely static deployment needs this API service behind the same origin. Responses are cached for 60 seconds; failed refreshes retain the last successful readings with a stale flag.
+
+Additional parking providers are Ghent (municipal free-reuse model license), St. Gallen (CC BY-NC, noncommercial reuse) and Zürich (PLS live RSS under CC0, with coordinates/capacity joined by normalized facility name to ParkenDD metadata). Zürich facilities without usable coordinates or counts are excluded; its official per-facility timestamps are retained. Update cadence, coverage and data age vary by provider.
+
+Bratislava and Košice have sensor-backed parking services, but a publicly accessible occupancy feed for this integration has not been verified. Their payment and permit APIs do not establish access to current availability.

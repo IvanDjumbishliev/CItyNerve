@@ -12,6 +12,7 @@
     "start": "node server/start.js"
   },
   "dependencies": {
+    "fast-xml-parser": "5.12.0",
     "lucide-react": "^0.468.0",
     "maplibre-gl": "^4.7.1",
     "react": "^18.3.1",

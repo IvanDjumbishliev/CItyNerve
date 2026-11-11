@@ -1,56 +1,42 @@
+import {
+  providerUrls,
+  attribution,
+  download,
+  normalizeRows,
+  normalizeZurich,
+  validFacilities,
+} from "./parkingProviders.js";
 const cache = new Map(),
   pending = new Map();
-const urls = {
-  sofia: "https://www.sofiatraffic.bg/bg/parking/parkings/update",
-  basel: "https://data.bs.ch/api/explore/v2.1/catalog/datasets/100088/records?limit=100",
-};
+let zurichGeometry;
+async function load(city) {
+  if (city !== "zurich") return normalizeRows(city, JSON.parse(await download(providerUrls[city])));
+  const [xml, metadata] = await Promise.all([
+    download(providerUrls.zurich),
+    zurichGeometry
+      ? Promise.resolve(zurichGeometry)
+      : download("https://api.parkendd.de/Zuerich").then(JSON.parse),
+  ]);
+  const result = normalizeZurich(xml, metadata);
+  if (!result.length) throw Error("Zürich geometry could not be matched");
+  zurichGeometry = metadata;
+  return result;
+}
 export async function availability(city) {
-  if (!urls[city]) throw Error("Unknown city");
+  if (!Object.hasOwn(providerUrls, city)) throw Error("Unknown city");
   const previous = cache.get(city);
   if (previous && Date.now() - Date.parse(previous.fetchedAt) < 60000) return previous;
   if (pending.has(city)) return pending.get(city);
   const task = (async () => {
     try {
-      const response = await fetch(urls[city], { signal: AbortSignal.timeout(15000) });
-      if (!response.ok) throw Error("Provider unavailable");
-      const body = await response.text();
-      if (body.length > 2000000) throw Error("Response too large");
-      const raw = JSON.parse(body),
-        rows = city === "sofia" ? raw : raw.results;
-      if (!Array.isArray(rows)) throw Error("Invalid response");
-      const facilities = rows
-        .map((r) => ({
-          id: city + "-" + r.id,
-          name: r.name_english || r.title,
-          lon: city === "sofia" ? r.longitude : r.geo_point_2d?.lon,
-          lat: city === "sofia" ? r.latitude : r.geo_point_2d?.lat,
-          free: city === "sofia" ? r.spaces : r.free,
-          capacity: city === "sofia" ? null : r.total,
-          measuredAt: r.published || null,
-          status:
-            city === "sofia"
-              ? "unknown"
-              : r.status === "offen"
-                ? "open"
-                : r.status === "geschlossen"
-                  ? "closed"
-                  : "unknown",
-        }))
-        .filter(
-          (r) =>
-            typeof r.name === "string" &&
-            Number.isFinite(r.lon) &&
-            Number.isFinite(r.lat) &&
-            Number.isInteger(r.free) &&
-            r.free >= 0 &&
-            (r.capacity === null || (Number.isInteger(r.capacity) && r.capacity >= r.free)),
-        );
+      const facilities = validFacilities(await load(city));
       if (!facilities.length) throw Error("No valid observations");
       const result = {
         facilities,
         fetchedAt: new Date().toISOString(),
         stale: false,
-        source: urls[city],
+        source: providerUrls[city],
+        attribution: attribution[city],
       };
       cache.set(city, result);
       return result;
@@ -65,8 +51,13 @@ export async function availability(city) {
   return task;
 }
 export function parkingMiddleware(req, res, next) {
-  const match = req.url?.match(/^\/api\/parking\/(sofia|basel)$/);
+  const match = req.url?.match(/^\/api\/parking\/([a-z]+)$/);
   if (!match) return next();
+  if (!Object.hasOwn(providerUrls, match[1])) {
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Unsupported parking city" }));
+    return;
+  }
   if (req.method !== "GET") {
     res.writeHead(405);
     res.end();
