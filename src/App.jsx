@@ -3,10 +3,13 @@ import {
   Waves, Map as MapIcon, ListOrdered, Satellite, Search, X, Play, Pause, Mountain, Building2, Droplets,
   Navigation, Box, Plus, Minus, RotateCcw, Info, CloudRain, Gauge, Wrench, ArrowUpRight, SlidersHorizontal,
   PanelRightClose, PanelRightOpen, CircleAlert, MapPin, ScanLine, CalendarDays, Check, Loader2, TriangleAlert,
+  LayoutDashboard, Siren, CloudRain as RainIcon, CloudFog, ThermometerSun, CarFront, BellRing, Radio, Settings2,
 } from 'lucide-react';
 import FloodMap from './FloodMap.jsx';
 import { CITY, RISK, CAUSE, riskLevel, PIPELINE } from './data.js';
 import { useFloodData } from './useFloodData.js';
+import LegacyApp from './legacy/LegacyApp.jsx';
+import './legacy/legacy.css';
 
 const TZ = 'Europe/Sofia';
 const fmtDay = (iso) => new Date(iso).toLocaleDateString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric' });
@@ -30,14 +33,25 @@ function Toggle({ on, onChange, icon: Icon, label, hint }) {
 }
 
 /* ───────────── navigation rail ───────────── */
+const RAIL_GROUPS = [
+  { label: null, items: [['map', 'Flood map', MapIcon], ['register', 'Risk register', ListOrdered], ['sources', 'Data & model', Satellite]] },
+  { label: 'Platform', items: [
+    ['l-overview', 'Overview', LayoutDashboard], ['l-incidents', 'Incidents', Siren], ['l-flood', 'Flood', RainIcon],
+    ['l-fog', 'Fog', CloudFog], ['l-heat', 'Heat', ThermometerSun], ['l-mobility', 'Mobility', CarFront],
+    ['l-alert', 'Alerts', BellRing], ['l-devices', 'Devices', Radio], ['l-settings', 'Settings', Settings2],
+  ] },
+];
+
 function Rail({ page, setPage }) {
-  const items = [['map', 'Flood map', MapIcon], ['register', 'Risk register', ListOrdered], ['sources', 'Data & model', Satellite]];
   return <nav className="rail" aria-label="Main">
     <div className="rail-logo" title="FloodNerve"><Waves size={20} strokeWidth={2.4} /></div>
     <div className="rail-items">
-      {items.map(([id, label, Icon]) => <button key={id} className={`rail-btn ${page === id ? 'is-active' : ''}`} onClick={() => setPage(id)} aria-current={page === id}>
-        <Icon size={19} /><span>{label}</span>
-      </button>)}
+      {RAIL_GROUPS.map((g, gi) => <div className="rail-group" key={gi}>
+        {g.label && <span className="rail-group-label">{g.label}</span>}
+        {g.items.map(([id, label, Icon]) => <button key={id} className={`rail-btn ${page === id ? 'is-active' : ''}`} onClick={() => setPage(id)} aria-current={page === id} title={label}>
+          <Icon size={19} /><span>{label}</span>
+        </button>)}
+      </div>)}
     </div>
     <div className="rail-foot"><span className="pulse-dot live" /><span className="rail-foot-text">NASA data</span></div>
   </nav>;
@@ -406,6 +420,7 @@ export default function App() {
       {page === 'map' && <MapPage data={data} />}
       {page === 'register' && <RegisterPage data={data} />}
       {page === 'sources' && <SourcesPage data={data} />}
+      {page.startsWith('l-') && <LegacyApp page={page.slice(2)} setPage={id => setPage('l-' + id)} />}
     </main>
   </div>;
 }

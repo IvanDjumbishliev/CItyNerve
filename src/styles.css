@@ -420,3 +420,23 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .lidar-dot { width: 7px; height: 7px; border-radius: 50%; background: #E7F6A9; display: inline-block; }
 .limits { margin: 0; padding: 0 0 0 18px; display: grid; gap: 8px; color: var(--text-2); font-size: 13.5px; line-height: 1.55; max-width: 860px; }
 .demo-chip { color: var(--low); border-color: rgba(87, 196, 142, .3); }
+
+/* ───────── rail groups (map screens + platform screens) ───────── */
+.rail-items { overflow-y: auto; overflow-x: hidden; scrollbar-width: none; min-height: 0; gap: 0; }
+.rail-items::-webkit-scrollbar { display: none; }
+.rail-group { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.rail-group + .rail-group { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); width: 60px; }
+.rail-group-label { font-family: var(--mono); font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.rail-btn { padding: 8px 0 6px; }
+.rail { padding-bottom: 12px; gap: 14px; }
+@media (max-width: 860px) {
+  .rail-items { flex-direction: row; overflow-x: auto; overflow-y: hidden; justify-content: flex-start; gap: 4px; }
+  .rail-group { flex-direction: row; align-items: center; }
+  .rail-group + .rail-group { margin: 0 0 0 6px; padding: 0 0 0 8px; border-top: 0; border-left: 1px solid var(--line); width: auto; }
+  .rail-group-label { display: none; }
+  .rail-btn { flex: 0 0 68px; width: 68px; }
+}
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .legacy { overflow-x: hidden; }
+}
