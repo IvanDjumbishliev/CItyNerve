@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { STYLE } from "./FloodMap.jsx";
+import { PARKING_CITIES } from "../shared/parkingCities.js";
 export default function MobilityPage() {
   const [city, setCity] = useState("sofia"),
     [data, setData] = useState(null),
@@ -34,6 +35,8 @@ export default function MobilityPage() {
     setData(null);
     setSelected(null);
     setQuery("");
+    setSort("free");
+    setError("");
   }, [city]);
   useEffect(() => {
     let stopped = false,
@@ -41,9 +44,10 @@ export default function MobilityPage() {
     async function load() {
       if (document.hidden) return;
       controller?.abort();
-      controller = new AbortController();
+      const active = new AbortController();
+      controller = active;
       try {
-        const r = await fetch("/api/parking/" + city, { signal: controller.signal });
+        const r = await fetch("/api/parking/" + city, { signal: active.signal });
         if (!r.ok) throw Error();
         const result = await r.json();
         if (!stopped) {
@@ -51,7 +55,7 @@ export default function MobilityPage() {
           setError("");
         }
       } catch {
-        if (!stopped && !controller.signal.aborted)
+        if (!stopped && !active.signal.aborted)
           setError("Refresh failed. Displaying the last available readings when available.");
       }
     }
@@ -96,7 +100,8 @@ export default function MobilityPage() {
       sort === "nearest" && position
         ? distance(a) - distance(b)
         : sort === "busy"
-          ? 1 - b.free / b.capacity - (1 - a.free / a.capacity)
+          ? (b.capacity > 0 ? 1 - b.free / b.capacity : -1) -
+            (a.capacity > 0 ? 1 - a.free / a.capacity : -1)
           : b.free - a.free,
     );
   const facility = data?.facilities.find((f) => f.id === selected);
@@ -148,14 +153,14 @@ export default function MobilityPage() {
             value={city}
             onChange={(e) => {
               setCity(e.target.value);
-              map.current?.jumpTo({
-                center: e.target.value === "sofia" ? [23.33, 42.69] : [7.59, 47.56],
-                zoom: 12,
-              });
+              map.current?.jumpTo({ center: PARKING_CITIES[e.target.value].center, zoom: 12 });
             }}
           >
-            <option value="sofia">Sofia</option>
-            <option value="basel">Basel</option>
+            {Object.entries(PARKING_CITIES).map(([id, c]) => (
+              <option key={id} value={id}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </label>
         <p>Monitored facilities · {data?.facilities.length || 0} locations</p>
@@ -169,7 +174,9 @@ export default function MobilityPage() {
         />
         <div className="sun-locations">
           <button onClick={() => setSort("free")}>Most available</button>
-          {city === "basel" && <button onClick={() => setSort("busy")}>Nearly full</button>}
+          {data?.facilities.some((f) => f.capacity > 0) && (
+            <button onClick={() => setSort("busy")}>Nearly full</button>
+          )}
           <button onClick={nearest}>Nearest</button>
           <button onClick={() => setRefresh((n) => n + 1)}>Refresh</button>
         </div>
@@ -229,9 +236,7 @@ export default function MobilityPage() {
         )}
         <p>Counts can change before arrival. Gray markers indicate old or uncertain readings.</p>
         <a href={data?.source || "#"} target="_blank" rel="noreferrer">
-          {city === "sofia"
-            ? "Source · Sofia Urban Mobility Centre"
-            : "Source · Basel-Stadt · CC BY 4.0"}
+          {data?.attribution ? "Source · " + data.attribution : "Parking provider"}
         </a>
       </aside>
     </div>
