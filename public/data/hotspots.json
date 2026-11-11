@@ -1,0 +1,331 @@
+[
+ {
+  "id": "H-01",
+  "name": "Pirotska",
+  "district": "Centre",
+  "coord": [
+   23.30458,
+   42.70199
+  ],
+  "score": 76,
+  "depth": 0.49,
+  "mean_depth": 0.38,
+  "area_m2": 242270,
+  "built_m2": 222629,
+  "events": 4,
+  "events_total": 47,
+  "per_year": 0.8,
+  "duration_h": 91,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2023-06-12",
+   "2024-04-17",
+   "2025-05-24"
+  ],
+  "upstream_km2": 66.41,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-02",
+  "name": "Lipov tsvyat",
+  "district": "\u041d\u041f\u0417 \u0425\u0430\u0434\u0436\u0438 \u0414\u0438\u043c\u0438\u0442\u044a\u0440",
+  "coord": [
+   23.35264,
+   42.71486
+  ],
+  "score": 62,
+  "depth": 0.52,
+  "mean_depth": 0.42,
+  "area_m2": 34723,
+  "built_m2": 30865,
+  "events": 4,
+  "events_total": 47,
+  "per_year": 0.8,
+  "duration_h": 92,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2023-06-12",
+   "2024-04-17",
+   "2025-05-24"
+  ],
+  "upstream_km2": 116.12,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-03",
+  "name": "Jacques Duclos",
+  "district": "\u041d\u041f\u0417 \u0425\u0430\u0434\u0436\u0438 \u0414\u0438\u043c\u0438\u0442\u044a\u0440",
+  "coord": [
+   23.35882,
+   42.71713
+  ],
+  "score": 61,
+  "depth": 0.52,
+  "mean_depth": 0.4,
+  "area_m2": 26831,
+  "built_m2": 25954,
+  "events": 4,
+  "events_total": 47,
+  "per_year": 0.8,
+  "duration_h": 92,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2023-06-12",
+   "2024-04-17",
+   "2025-05-24"
+  ],
+  "upstream_km2": 116.43,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-04",
+  "name": "Unnamed street",
+  "district": "Sofia",
+  "coord": [
+   23.3777,
+   42.75697
+  ],
+  "score": 60,
+  "depth": 0.54,
+  "mean_depth": 0.46,
+  "area_m2": 28410,
+  "built_m2": 20343,
+  "events": 4,
+  "events_total": 47,
+  "per_year": 0.8,
+  "duration_h": 93,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2023-06-12",
+   "2024-04-17",
+   "2025-05-24"
+  ],
+  "upstream_km2": 130.31,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-05",
+  "name": "Slivnitsa Blvd.",
+  "district": "Centre",
+  "coord": [
+   23.33204,
+   42.70552
+  ],
+  "score": 60,
+  "depth": 0.47,
+  "mean_depth": 0.4,
+  "area_m2": 37879,
+  "built_m2": 30426,
+  "events": 4,
+  "events_total": 47,
+  "per_year": 0.8,
+  "duration_h": 91,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2023-06-12",
+   "2024-04-17",
+   "2025-05-24"
+  ],
+  "upstream_km2": 68.12,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-06",
+  "name": "Prevalski ezera",
+  "district": "Priplat",
+  "coord": [
+   23.19368,
+   42.63434
+  ],
+  "score": 57,
+  "depth": 0.45,
+  "mean_depth": 0.45,
+  "area_m2": 22885,
+  "built_m2": 17011,
+  "events": 4,
+  "events_total": 47,
+  "per_year": 0.8,
+  "duration_h": 89,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2023-06-12",
+   "2024-04-17",
+   "2025-05-24"
+  ],
+  "upstream_km2": 17.91,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-07",
+  "name": "Europe Motorway",
+  "district": "Sofia",
+  "coord": [
+   23.36878,
+   42.73983
+  ],
+  "score": 56,
+  "depth": 0.53,
+  "mean_depth": 0.48,
+  "area_m2": 4735,
+  "built_m2": 3683,
+  "events": 4,
+  "events_total": 47,
+  "per_year": 0.8,
+  "duration_h": 93,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2023-06-12",
+   "2024-04-17",
+   "2025-05-24"
+  ],
+  "upstream_km2": 124.71,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-08",
+  "name": "MacGahan",
+  "district": "Hadzhi Dimitar",
+  "coord": [
+   23.35058,
+   42.70679
+  ],
+  "score": 53,
+  "depth": 0.47,
+  "mean_depth": 0.38,
+  "area_m2": 78915,
+  "built_m2": 50067,
+  "events": 3,
+  "events_total": 47,
+  "per_year": 0.6,
+  "duration_h": 91,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2024-04-17",
+   "2025-05-24"
+  ],
+  "upstream_km2": 68.77,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-09",
+  "name": "17-\u0442\u0430",
+  "district": "Vrazhdebna",
+  "coord": [
+   23.40963,
+   42.71637
+  ],
+  "score": 50,
+  "depth": 0.41,
+  "mean_depth": 0.38,
+  "area_m2": 177560,
+  "built_m2": 146432,
+  "events": 2,
+  "events_total": 47,
+  "per_year": 0.4,
+  "duration_h": 91,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2025-05-24"
+  ],
+  "upstream_km2": 66.47,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-10",
+  "name": "Nikola Voynovski",
+  "district": "Hadzhi Dimitar",
+  "coord": [
+   23.34303,
+   42.70452
+  ],
+  "score": 47,
+  "depth": 0.47,
+  "mean_depth": 0.43,
+  "area_m2": 21307,
+  "built_m2": 13854,
+  "events": 3,
+  "events_total": 47,
+  "per_year": 0.6,
+  "duration_h": 91,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2024-04-17",
+   "2025-05-24"
+  ],
+  "upstream_km2": 68.39,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-11",
+  "name": "Zhitnitsa",
+  "district": "Sredets Industrial Zone",
+  "coord": [
+   23.28295,
+   42.6871
+  ],
+  "score": 46,
+  "depth": 0.42,
+  "mean_depth": 0.34,
+  "area_m2": 17361,
+  "built_m2": 14029,
+  "events": 3,
+  "events_total": 47,
+  "per_year": 0.6,
+  "duration_h": 90,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2023-06-12",
+   "2025-05-24"
+  ],
+  "upstream_km2": 49.43,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ },
+ {
+  "id": "H-12",
+  "name": "\u043c. \u042f\u043f\u0430\u0434\u0436\u0430",
+  "district": "Sofia",
+  "coord": [
+   23.42749,
+   42.71158
+  ],
+  "score": 45,
+  "depth": 0.39,
+  "mean_depth": 0.36,
+  "area_m2": 98644,
+  "built_m2": 90314,
+  "events": 2,
+  "events_total": 47,
+  "per_year": 0.4,
+  "duration_h": 90,
+  "cause": "river",
+  "worst_event": "2025-05-24",
+  "recent_dates": [
+   "2023-01-19",
+   "2025-05-24"
+  ],
+  "upstream_km2": 37.69,
+  "fix": "Check river channel and culvert capacity here; consider widening or raising banks and upstream detention."
+ }
+]

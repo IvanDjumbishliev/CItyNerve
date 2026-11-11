@@ -1,95 +1,411 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
-  Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bell, BellRing, Building2,
-  CarFront, Check, ChevronDown, ChevronRight, CircleHelp, CloudFog, CloudRain,
-  CloudSun, Command, Download, Droplets, ExternalLink, Gauge, Globe2, LayoutDashboard,
-  Layers3, Map, MapPin, Menu, MoreHorizontal, Radio, RefreshCw, Search, Settings2,
-  ShieldCheck, Siren, ThermometerSun, TrafficCone, Waves, Wifi, X,
+  Waves, Map as MapIcon, ListOrdered, Satellite, Search, X, Play, Pause, Mountain, Building2, Droplets,
+  Navigation, Box, Plus, Minus, RotateCcw, Info, CloudRain, Gauge, Wrench, ArrowUpRight, SlidersHorizontal,
+  PanelRightClose, PanelRightOpen, CircleAlert, MapPin, ScanLine, CalendarDays, Check, Loader2, TriangleAlert,
 } from 'lucide-react';
-import { CITIES, MODULES, INITIAL_INCIDENTS, SCENARIOS } from './data.js';
+import FloodMap from './FloodMap.jsx';
+import { CITY, RISK, CAUSE, riskLevel, PIPELINE } from './data.js';
+import { useFloodData } from './useFloodData.js';
 
-const ICONS = { overview: LayoutDashboard, flood: Waves, fog: CloudFog, heat: ThermometerSun, mobility: CarFront, alert: BellRing, incidents: Siren, devices: Radio, settings: Settings2 };
-const MODULE_KEYS = ['flood', 'fog', 'heat', 'mobility', 'alert'];
-const typeName = (type) => ({flood:'FloodNerve',fog:'FogNerve',heat:'HeatNerve',mobility:'MobilityNerve',alert:'AlertNerve'})[type] ?? type;
-const nowTime = () => new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+const TZ = 'Europe/Sofia';
+const fmtDay = (iso) => new Date(iso).toLocaleDateString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric' });
+const fmtDayShort = (iso) => new Date(iso).toLocaleDateString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' });
+const fmtTime = (d) => d.toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const addHours = (iso, h) => new Date(new Date(iso).getTime() + h * 3600e3);
+const ha = (km2) => Math.round(km2 * 100);
 
-function Brand({ compact = false }) {
-  return <div className="brand"><div className="brand-symbol"><Activity size={21} strokeWidth={2.5} /></div>{!compact && <div className="brand-copy"><strong>CITYNERVE<span className="brand-dot">.</span></strong><small>URBAN INTELLIGENCE</small></div>}</div>;
+/* ───────────── small UI atoms ───────────── */
+function RiskBadge({ score, showScore = true }) {
+  const lvl = riskLevel(score);
+  return <span className={`risk-badge rb-${lvl}`}><CircleAlert size={12} strokeWidth={2.4} />{RISK[lvl].label}{showScore && <b>{score}</b>}</span>;
 }
-function Tag({ children, variant = 'neutral' }) { return <span className={`tag tag-${variant}`}>{children}</span>; }
-function StatusDot({ color = 'green' }) { return <span className={`status-dot dot-${color}`} />; }
-function ModuleIcon({ module, size = 19 }) {const Icon = ICONS[module] ?? Activity;return <span className={`module-icon mod-${module}`}><Icon size={size}/></span>}
-function Sidebar({ page, onNavigate, mobileOpen, close }) {
-  const nav = [
-    { heading:'WORKSPACE', items:[['overview','Overview'],['incidents','Incident center']] },
-    { heading:'INTELLIGENCE MODULES', items:[['flood','FloodNerve'],['fog','FogNerve'],['heat','HeatNerve'],['mobility','MobilityNerve'],['alert','AlertNerve']] },
-    { heading:'SYSTEM', items:[['devices','Connected devices'],['settings','Settings']] },
-  ];
-  return <><div className={`scrim ${mobileOpen?'is-visible':''}`} onClick={close}/><aside className={`sidebar ${mobileOpen?'sidebar-open':''}`}>
-    <div className="sidebar-head"><Brand/><button className="mobile-close icon-button" onClick={close} aria-label="Close menu"><X size={18}/></button></div>
-    <div className="workspace-label"><span className="workspace-icon"><Building2 size={16}/></span><span><strong>City Operations</strong><small>Demo workspace</small></span><ChevronDown size={15}/></div>
-    <nav className="side-nav">{nav.map(group=><div className="nav-group" key={group.heading}><p className="nav-heading">{group.heading}</p>{group.items.map(([id,label])=>{const Icon=ICONS[id];return <button key={id} className={`nav-link ${page===id?'nav-active':''}`} onClick={()=>{onNavigate(id);close()}}><Icon size={18} strokeWidth={page===id?2.3:1.8}/><span>{label}</span>{id==='incidents'&&<span className="nav-count">3</span>}</button>})}</div>)}</nav>
-    <div className="sidebar-footer"><div className="system-chip"><span className="live-ring"><StatusDot/></span><span><strong>System operational</strong><small>Demo environment · v0.1.0</small></span></div><div className="powered">BUILT FOR EUROPEAN CITIES <Globe2 size={14}/></div></div>
-  </aside></>;
+function Kpi({ label, value, unit, note }) {
+  return <div className="kpi"><span className="kpi-label">{label}</span><span className="kpi-value">{value}<small>{unit}</small></span>{note && <span className="kpi-note">{note}</span>}</div>;
 }
-function Header({ city, setCityId, page, onMenu, incidents }) {
-  const [searchOpen,setSearchOpen]=useState(false);
-  return <header className="topbar"><div className="top-left"><button className="mobile-menu icon-button" onClick={onMenu} aria-label="Open menu"><Menu size={21}/></button><div className="breadcrumbs"><span>City Operations</span><ChevronRight size={15}/><strong>{page==='overview'?'Overview':page==='incidents'?'Incident center':page==='devices'?'Connected devices':page==='settings'?'Settings':typeName(page)}</strong></div></div><div className="top-actions"><div className="search-wrap"><button className="search-button" onClick={()=>setSearchOpen(v=>!v)}><Search size={17}/><span>Search platform</span><kbd>⌘ K</kbd></button>{searchOpen&&<div className="search-pop"><p>Quick navigation</p>{[['overview','Overview'],...MODULE_KEYS.map(x=>[x,typeName(x)])].map(([id,name])=><button key={id} onClick={()=>{document.dispatchEvent(new CustomEvent('cn:navigate',{detail:id}));setSearchOpen(false)}}>{name}<ArrowRight size={14}/></button>)}</div>}</div>
-    <div className="city-select"><MapPin size={15}/><select aria-label="Select city" value={city.id} onChange={e=>setCityId(e.target.value)}>{CITIES.map(x=><option key={x.id} value={x.id}>{x.label}, {x.country==='Slovakia'?'SK':x.country==='Spain'?'ES':'NL'}</option>)}</select><ChevronDown size={14}/></div><button className="notification-button icon-button" title={`${incidents.length} demo incidents`} onClick={()=>document.dispatchEvent(new CustomEvent('cn:navigate',{detail:'incidents'}))}><Bell size={19}/><i/></button><div className="avatar" title="Demo operator">CN</div></div></header>;
+function Toggle({ on, onChange, icon: Icon, label, hint }) {
+  return <button className={`toggle ${on ? 'is-on' : ''}`} onClick={() => onChange(!on)} role="switch" aria-checked={on}>
+    <Icon size={15} /><span className="toggle-text">{label}{hint && <small>{hint}</small>}</span><span className="switch"><i /></span>
+  </button>;
 }
-function StatCard({ label, value, trend, foot, icon:Icon, tone='blue' }) { return <div className="stat-card"><div className="stat-top"><span>{label}</span><span className={`stat-icon stat-${tone}`}><Icon size={19}/></span></div><div className="stat-value">{value}</div><div className="stat-foot"><span className="stat-mini">{trend}</span> {foot}</div></div> }
-function CityMap({ city, incidents, onIncident }) {
-  const markers = [
-    {x:28,y:37,type:'flood',t:'Flood sensor',color:'blue'},
-    {x:67,y:29,type:'fog',t:'Visibility station',color:'purple'},
-    {x:48,y:71,type:'mobility',t:'Smart parking',color:'teal'},
-    {x:80,y:62,type:'heat',t:'Heat monitor',color:'orange'},
-  ];
-  return <div className="map-panel"><div className="map-top-overlay"><span><span className="tiny-live"/> CITY GRID · {city.label.toUpperCase()}</span><span>SIMULATED MAP</span></div>
-    <svg className="map-illustration" viewBox="0 0 900 490" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Illustrative stylized street grid for demo incident markers"><defs><pattern id="blockpattern" width="145" height="110" patternUnits="userSpaceOnUse"><rect width="145" height="110" fill="#131f30"/><rect x="13" y="12" width="52" height="37" rx="4" fill="#1c2d3e"/><rect x="76" y="12" width="51" height="37" rx="4" fill="#1c2d3e"/><rect x="15" y="62" width="32" height="34" rx="3" fill="#203447"/><rect x="56" y="62" width="72" height="34" rx="3" fill="#203447"/><path d="M0 55H145 M70 0V110" stroke="#304354" strokeWidth="9"/><path d="M0 55H145 M70 0V110" stroke="#7c8a96" strokeWidth="1" strokeDasharray="6 8" opacity=".4"/></pattern><linearGradient id="river" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#1f6989"/><stop offset="1" stopColor="#124a71"/></linearGradient></defs><rect width="900" height="490" fill="url(#blockpattern)"/><path d="M-25 350 C 100 270 240 375 337 280 C 455 160 530 295 665 190 C 760 105 845 180 930 80" stroke="#0c394f" strokeWidth="62" fill="none"/><path d="M-25 350 C 100 270 240 375 337 280 C 455 160 530 295 665 190 C 760 105 845 180 930 80" stroke="url(#river)" strokeWidth="47" fill="none"/><path d="M-25 350 C 100 270 240 375 337 280 C 455 160 530 295 665 190 C 760 105 845 180 930 80" stroke="#3b9db5" strokeWidth="1.5" fill="none" strokeDasharray="10 10" opacity=".5"/><rect x="480" y="340" width="210" height="100" rx="18" fill="#172a33" opacity=".7"/><circle cx="565" cy="385" r="28" fill="#1b3e3a"/><circle cx="610" cy="385" r="24" fill="#1b3e3a"/><text x="360" y="75" fill="#647e8d" fontSize="15" letterSpacing="4">CITY CENTER</text><text x="75" y="435" fill="#647e8d" fontSize="13" letterSpacing="3">RIVERSIDE DISTRICT</text><text x="695" y="430" fill="#647e8d" fontSize="13" letterSpacing="3">EAST DISTRICT</text></svg>
-    {markers.map(m=>{const Icon=ICONS[m.type];return <button key={m.type} className={`map-pin pin-${m.color}`} style={{left:`${m.x}%`,top:`${m.y}%`}} onClick={()=>onIncident(m.type)} title={`${m.t} — simulated`}><Icon size={17}/></button>})}
-    {incidents.length>3&&<span className="map-incident-indicator"><Siren size={13}/> {incidents.length-3} scenario(s) triggered</span>}
-    <div className="map-legend"><span><i className="legend-circle blue"/> Flood</span><span><i className="legend-circle purple"/> Fog</span><span><i className="legend-circle orange"/> Heat</span><span><i className="legend-circle teal"/> Mobility</span></div>
+
+/* ───────────── navigation rail ───────────── */
+function Rail({ page, setPage }) {
+  const items = [['map', 'Flood map', MapIcon], ['register', 'Risk register', ListOrdered], ['sources', 'Data & model', Satellite]];
+  return <nav className="rail" aria-label="Main">
+    <div className="rail-logo" title="FloodNerve"><Waves size={20} strokeWidth={2.4} /></div>
+    <div className="rail-items">
+      {items.map(([id, label, Icon]) => <button key={id} className={`rail-btn ${page === id ? 'is-active' : ''}`} onClick={() => setPage(id)} aria-current={page === id}>
+        <Icon size={19} /><span>{label}</span>
+      </button>)}
+    </div>
+    <div className="rail-foot"><span className="pulse-dot live" /><span className="rail-foot-text">NASA data</span></div>
+  </nav>;
+}
+
+/* ───────────── timeline ───────────── */
+function EventTimeline({ ev, hour, setHour, playing, setPlaying }) {
+  const W = 480, H = 74, n = ev.rain.length;
+  const maxRain = Math.max(...ev.rain, 0.5);
+  const bw = W / n;
+  const xAt = (i) => (i / Math.max(1, n - 1)) * W;
+  const line = ev.level.map((v, i) => `${i ? 'L' : 'M'}${xAt(i).toFixed(1)} ${(H - 4 - v * 38).toFixed(1)}`).join(' ');
+  const area = `M0 ${H} ` + ev.level.map((v, i) => `L${xAt(i).toFixed(1)} ${(H - 4 - v * 38).toFixed(1)}`).join(' ') + ` L${W} ${H} Z`;
+  const now = addHours(ev.window_start, hour);
+  const peak = ev.level.indexOf(Math.max(...ev.level));
+  const lvl = ev.level[Math.round(hour)] ?? 0;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(f * (n - 1)));
+  return <section className="timeline glass" aria-label="Storm timeline">
+    <div className="tl-head">
+      <button className="play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pause' : 'Play storm'}>{playing ? <Pause size={16} /> : <Play size={16} />}</button>
+      <div className="tl-clock"><span className="mono big">{fmtTime(now)}</span><span className="tl-sub">{Math.abs(hour - peak) < 1 ? 'Peak water' : hour < peak ? 'Water rising' : 'Receding'} · local time</span></div>
+      <div className="tl-reads">
+        <span><CloudRain size={13} /> <b className="mono">{(ev.rain[Math.round(hour)] ?? 0).toFixed(1)}</b> mm/h</span>
+        <span><Gauge size={13} /> <b className="mono">{Math.round(lvl * 100)}%</b> of event peak</span>
+      </div>
+    </div>
+    <div className="tl-chart">
+      <div className="tl-lane-labels"><span>Rain</span><span>Water</span></div>
+      <div className="tl-svg-wrap">
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+          {ev.rain.map((r, i) => <rect key={i} x={i * bw + bw * 0.15} y={0} width={bw * 0.7} height={Math.max(0.4, (r / maxRain) * 26)} rx="1" className={i <= hour ? 'rain-bar past' : 'rain-bar'} />)}
+          <line x1="0" x2={W} y1="31" y2="31" className="tl-divider" />
+          <path d={area} className="level-area" />
+          <path d={line} className="level-line" vectorEffect="non-scaling-stroke" />
+          <line x1={xAt(hour)} x2={xAt(hour)} y1="0" y2={H} className="tl-cursor" vectorEffect="non-scaling-stroke" />
+        </svg>
+        <input type="range" min="0" max={n - 1} step="1" value={hour} onChange={e => { setPlaying(false); setHour(+e.target.value); }} aria-label="Scrub storm hour" />
+        <div className="tl-ticks">{ticks.map(i => <span key={i}>{fmtTime(addHours(ev.window_start, i)).replace(',', '')}</span>)}</div>
+      </div>
+    </div>
+  </section>;
+}
+
+function RecordTimeline({ summary, onPick }) {
+  const W = 480, H = 74, days = summary.daily, n = days.length;
+  const max = Math.max(...days.map(d => d[1]));
+  const path = days.map(([, v], i) => v > 0.5 ? `M${(i / n * W).toFixed(1)} ${H - 2} V${(H - 2 - (v / max) * (H - 8)).toFixed(1)}` : '').join('');
+  const dayIndex = Object.fromEntries(days.map(([d], i) => [d, i]));
+  const years = Object.keys(summary.rain.yearly_mm);
+  return <section className="timeline glass" aria-label="Five-year rain record">
+    <div className="tl-head">
+      <span className="play static"><CalendarDays size={16} /></span>
+      <div className="tl-clock"><span className="mono big">{fmtDay(summary.period.start)} – {fmtDay(summary.period.end)}</span><span className="tl-sub">Daily rain, 5 years · map shows the deepest water from the 8 largest storms</span></div>
+      <div className="tl-reads">
+        <span><CloudRain size={13} /> <b className="mono">{summary.rain.annual_mean_mm}</b> mm/yr</span>
+        <span><Droplets size={13} /> wettest day <b className="mono">{summary.rain.wettest_day.mm}</b> mm</span>
+      </div>
+    </div>
+    <div className="tl-chart">
+      <div className="tl-lane-labels"><span>Rain</span><span>/day</span></div>
+      <div className="tl-svg-wrap">
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+          <path d={path} className="daily-bars" vectorEffect="non-scaling-stroke" />
+        </svg>
+        {summary.events.map((e, i) => {
+          const idx = dayIndex[e.start.slice(0, 10)];
+          if (idx == null) return null;
+          return <button key={e.id} className="ev-tick" style={{ left: `${(idx / n) * 100}%` }} onClick={() => onPick(i)} title={`${fmtDay(e.start)} · ${e.total_mm} mm`} aria-label={`Open storm of ${fmtDay(e.start)}`} />;
+        })}
+        <div className="tl-ticks">{years.map(y => <span key={y}>{y}</span>)}</div>
+      </div>
+    </div>
+  </section>;
+}
+
+/* ───────────── left dock: real storms + layers ───────────── */
+function StormDock({ summary, eventIdx, setEventIdx, layers, setLayers, open, close }) {
+  const set = (k) => (v) => setLayers(l => ({ ...l, [k]: v }));
+  const ev = eventIdx >= 0 ? summary.events[eventIdx] : null;
+  return <aside className={`dock glass ${open ? 'is-open' : ''}`} aria-label="Storms and layers">
+    <button className="sheet-close icon-btn" onClick={close} aria-label="Close"><X size={16} /></button>
+    <div className="dock-section">
+      <h3 className="eyebrow">Real storms · last 5 years</h3>
+      <div className="storm-list">
+        <button className={`storm ${eventIdx === -1 ? 'is-on' : ''}`} onClick={() => setEventIdx(-1)}>
+          <span className="storm-date">5-year maximum</span><span className="storm-meta mono">{summary.max5y.flooded_km2} km²</span>
+        </button>
+        {summary.events.map((e, i) => <button key={e.id} className={`storm ${eventIdx === i ? 'is-on' : ''}`} onClick={() => setEventIdx(i)}>
+          <span className="storm-date">{fmtDay(e.start)}</span>
+          <span className="storm-meta mono">{Math.round(e.total_mm)} mm</span>
+        </button>)}
+      </div>
+      {ev ? <div className="readouts">
+        <div><span>Rain (GPM)</span><b className="mono">{Math.round(ev.total_mm)}<small> mm</small></b></div>
+        <div><span>Soil wetness</span><b className="mono">{Math.round(ev.soil_wetness * 100)}<small> %</small></b></div>
+        <div><span>ERA5 check</span><b className="mono">{Math.round(ev.era5_mm)}<small> mm</small></b></div>
+      </div> : <p className="dock-desc">{summary.rain.events_confirmed} storms ≥12 mm confirmed by two independent sources since {fmtDay(summary.period.start)}.</p>}
+    </div>
+    <div className="dock-section">
+      <h3 className="eyebrow">Layers</h3>
+      <Toggle on={layers.extent} onChange={set('extent')} icon={Droplets} label="Flood depth" hint="model output · 28 m" />
+      <Toggle on={layers.depth3d} onChange={set('depth3d')} icon={Box} label="Water volume" hint="3D at problem spots · ×20" />
+      <Toggle on={layers.flow} onChange={set('flow')} icon={Navigation} label="River network" hint="computed from terrain" />
+      <Toggle on={layers.hotspots} onChange={set('hotspots')} icon={CircleAlert} label="Problem spots" />
+      <Toggle on={layers.lidar} onChange={set('lidar')} icon={ScanLine} label="ICESat-2 lidar" hint="NASA ground tracks" />
+      <Toggle on={layers.buildings} onChange={set('buildings')} icon={Building2} label="3D buildings" hint="OSM heights" />
+      <Toggle on={layers.terrain} onChange={set('terrain')} icon={Mountain} label="Terrain relief" hint="SRTM ×1.6" />
+    </div>
+    <div className="dock-section legend">
+      <h3 className="eyebrow">Water depth</h3>
+      <div className="depth-ramp"><i style={{ background: '#1F5F8B' }} /><i style={{ background: '#2E8FD0' }} /><i style={{ background: '#7CCBFF' }} /></div>
+      <div className="depth-labels"><span>0.1–0.3 m</span><span>0.3–1 m</span><span>&gt; 1 m</span></div>
+      {layers.lidar && <div className="drain-legend"><span><i className="lidar-dot" />ICESat-2 ground point (2021–2026)</span></div>}
+    </div>
+  </aside>;
+}
+
+/* ───────────── right panel ───────────── */
+function HotspotDetail({ h, close }) {
+  return <div className="detail">
+    <div className="detail-head">
+      <div><span className="eyebrow">{h.id} · {h.district}</span><h3>{h.name}</h3></div>
+      <button className="icon-btn" onClick={close} aria-label="Close detail"><X size={16} /></button>
+    </div>
+    <div className="badge-row"><RiskBadge score={h.score} /><span className="cause-tag">{CAUSE[h.cause]}</span></div>
+    <div className="detail-grid">
+      <div><span>Max depth</span><b className="mono">{h.depth.toFixed(2)} m</b></div>
+      <div><span>Flooded in</span><b className="mono">{h.events} of {h.events_total}</b><small>storms ≥30 cm</small></div>
+      <div><span>Time above flood level</span><b className="mono">~{h.duration_h} h</b><small>model estimate</small></div>
+      <div><span>Built-up area hit</span><b className="mono">{(h.built_m2 / 1e4).toFixed(1)} ha</b></div>
+    </div>
+    <div className="detail-block"><span className="eyebrow">Storm dates that flooded it</span>
+      <div className="date-chips">{h.recent_dates.map(d => <span key={d} className={d === h.worst_event ? 'is-worst' : ''}>{fmtDay(d)}</span>)}</div>
+    </div>
+    <div className="detail-block"><span className="eyebrow">Why</span><p>{h.cause === 'river'
+      ? `Water rises out of the channel here: ${h.upstream_km2.toFixed(0)} km² of catchment drains through this point.`
+      : `A low point in the terrain collecting runoff from ${h.upstream_km2.toFixed(1)} km².`}</p></div>
+    <div className="detail-block fix"><span className="eyebrow"><Wrench size={11} /> Suggested action</span><p>{h.fix}</p></div>
   </div>;
 }
-function IncidentList({ incidents, compact=false }) {return <div className="incident-list">{incidents.slice(0,compact?4:undefined).map(item=>{const Icon=ICONS[item.type]??Siren;return <div className="incident-row" key={item.id}><span className={`incident-icon incident-${item.type}`}><Icon size={18}/></span><div className="incident-content"><div className="incident-title">{item.title}</div><div className="incident-meta"><MapPin size={12}/>{item.location} · {item.time} · {item.source}</div></div><div className="incident-right"><Tag variant={item.severity==='high'?'red':item.severity==='medium'?'amber':'neutral'}>{item.severity}</Tag><span className="incident-status">{item.status}</span></div></div>})}{!incidents.length&&<p className="empty-state">No incidents recorded.</p>}</div>}
-function Overview({ city, incidents, setPage, triggerScenario }) {return <>
-    <div className="page-heading"><div><div className="eyebrow">CITY OPERATIONS / LIVE OVERVIEW</div><h1>City intelligence overview <span className="heading-pulse"><StatusDot/> Demo</span></h1><p>Monitor urban infrastructure, assess risks, and coordinate smarter responses.</p></div><button className="outline-action" onClick={()=>setPage('incidents')}><Siren size={16}/> Incident center <ArrowUpRight size={16}/></button></div>
-    <div className="stats-grid"><StatCard label="Connected modules" value="05" icon={Layers3} foot="All configured" trend="↗ Active" tone="blue"/><StatCard label="Active incidents" value={String(incidents.length).padStart(2,'0')} icon={Siren} foot="In demo workspace" trend="↗ Tracking" tone="orange"/><StatCard label="City temperature" value={`${city.temperature}°C`} icon={ThermometerSun} foot="Sample reading" trend="• Demo" tone="rose"/><StatCard label="Sensor availability" value="100%" icon={Wifi} foot="Simulated connections" trend="✓ Online" tone="teal"/></div>
-    <div className="overview-grid"><section className="panel map-section"><div className="panel-header"><div><h2><Map size={18}/> City intelligence map</h2><p>Sensor locations and reported infrastructure events</p></div><button className="subtle-button" onClick={()=>setPage('incidents')}>View incidents <ArrowUpRight size={15}/></button></div><CityMap city={city} incidents={incidents} onIncident={setPage}/></section><section className="panel activity-panel"><div className="panel-header"><div><h2><Activity size={18}/> System status</h2><p>Modules operating in demo mode</p></div><MoreHorizontal size={19} className="muted-icon"/></div><div className="system-list">{MODULES.map(m=><button key={m.id} className="system-row" onClick={()=>setPage(m.id)}><ModuleIcon module={m.id}/><span className="system-row-label"><strong>{m.name}</strong><small>{m.description}</small></span><StatusDot/><ChevronRight size={15}/></button>)}</div><div className="demo-note"><ShieldCheck size={17}/><span>Safe demonstration mode<br/><small>No real-world city infrastructure is controlled.</small></span></div></section></div>
-    <div className="bottom-grid"><section className="panel incidents-panel"><div className="panel-header"><div><h2><Bell size={18}/> Recent incidents</h2><p>Latest events across connected modules</p></div><button className="subtle-button" onClick={()=>setPage('incidents')}>View all <ArrowRight size={15}/></button></div><IncidentList incidents={incidents} compact/></section><section className="panel quick-panel"><div className="panel-header"><div><h2><Command size={18}/> Scenario laboratory</h2><p>Test cross-module responses instantly</p></div></div><div className="scenario-grid">{Object.entries(SCENARIOS).map(([key,s])=>{const Icon=ICONS[key==='parking'?'mobility':key];return <button className="scenario-button" key={key} onClick={()=>triggerScenario(key)}><Icon size={18}/><span>{key==='parking'?'Parking full':key==='flood'?'Flood event':key==='fog'?'Dense fog':'Heat alert'}</span><ArrowUpRight size={15}/></button>})}</div><div className="scenario-foot"><CircleHelp size={15}/> Scenarios generate clearly labeled synthetic incidents.</div></section></div>
-  </>}
-function ModulePage({ type, city, incidents, triggerScenario, setPage }) {
-  const module=MODULES.find(m=>m.id===type);
-  const Icon=ICONS[type];
-  const configs={
-    flood:{eyebrow:'HYDROLOGICAL INTELLIGENCE', headline:'Flood monitoring & prevention', text:'Monitor forecast rainfall and local water sensors. Coordinate safe preparation of flood barriers and road advisories.', measure:`${city.rainfall} mm`, measureLabel:'Sample rainfall reading', action:'Trigger flood scenario', scenario:'flood', capabilities:['Rainfall and river risk ingestion','Local water-level monitoring','Barrier safety-check workflow','Flood impact event generation'], next:'Connect Open-Meteo precipitation data, then add your ESP32 water sensor and miniature barrier.'},
-    fog:{eyebrow:'ROAD WEATHER INTELLIGENCE', headline:'Visibility monitoring & road safety', text:'Detect poor visibility, flag hazardous corridors, and coordinate warning signage with mobility and citizen alerts.', measure:`${city.visibility} m`, measureLabel:'Sample visibility reading', action:'Trigger fog scenario', scenario:'fog', capabilities:['Forecast visibility ingestion','Low-visibility thresholds','Digital road sign simulation','Connected road hazard alerts'], next:'Connect Open-Meteo visibility forecasts and add an LED warning sign.'},
-    heat:{eyebrow:'CLIMATE RESILIENCE', headline:'Urban heat protection', text:'Track thermal exposure and coordinate heat-risk communication, public guidance and cooling points.', measure:`${city.temperature}°C`, measureLabel:'Sample air temperature', action:'Trigger heat scenario', scenario:'heat', capabilities:['Temperature and apparent heat','Heat-risk severity rules','Public heat advisories','Cooling location layer'], next:'Connect apparent temperature and forecast from Open-Meteo; add verified cooling places.'},
-    mobility:{eyebrow:'SMART URBAN MOBILITY', headline:'Traffic, roads & parking', text:'Monitor parking demand, connect road closures to weather incidents, and communicate mobility disruptions.', measure:`${city.occupancy}%`, measureLabel:'Simulated parking occupancy', action:'Trigger parking scenario', scenario:'parking', capabilities:['Parking zone inventory','Simulated occupancy inputs','Weather-linked road closures','City mobility warnings'], next:'Add parking areas from OpenStreetMap; occupancy should remain labeled simulated unless sensor-backed.'},
-    alert:{eyebrow:'PUBLIC COMMUNICATION', headline:'Coordinated incident communication', text:'Turn events from every CityNerve module into one consistent timeline and public/operator communications.', measure:`${incidents.length}`, measureLabel:'Demo incidents in workspace', action:'Open incident center', scenario:null, capabilities:['Shared incident event schema','Draft public safety messages','Cross-module event activity','Incident tracking and history'], next:'Connect incident storage in Cloudflare D1 and add Slovak/English message templates.'},
-  };
-  const conf=configs[type];
-  const related=incidents.filter(i=>i.type===type);
-  return <><div className="page-heading"><div><div className="eyebrow">MODULES / {conf.eyebrow}</div><div className="module-heading"><ModuleIcon module={type} size={25}/><h1>{module.name}</h1><Tag variant="blue">Framework ready</Tag></div><p>{conf.text}</p></div><button className="outline-action" onClick={()=>setPage('overview')}><LayoutDashboard size={16}/> Overview</button></div>
-    <div className="module-hero"><div className="hero-content"><div className="hero-eyebrow">MODULE CONTROL PANEL <span>•</span> {city.label.toUpperCase()}</div><h2>{conf.headline}</h2><p>Connect your first real data source when you're ready. All readings currently come from local demo configuration.</p><div className="hero-actions"><button className="primary-action" onClick={()=>conf.scenario?triggerScenario(conf.scenario):setPage('incidents')}>{conf.action}<ArrowRight size={16}/></button><span><StatusDot color="amber"/> Demo data only</span></div></div><div className="hero-orbit"><div className="orbit-ring orbit-a"/><div className="orbit-ring orbit-b"/><div className={`orbit-center mod-${type}`}><Icon size={60}/></div><i className="orbit-node node-one"/><i className="orbit-node node-two"/><i className="orbit-node node-three"/></div></div>
-    <div className="module-summary-grid"><div className="panel metric-panel"><span className="mini-label">CURRENT MEASUREMENT</span><div className="metric-number">{conf.measure}</div><p>{conf.measureLabel} · {city.label}</p><Tag>Demonstration only</Tag></div><div className="panel metric-panel"><span className="mini-label">MODULE STATUS</span><div className="metric-status"><StatusDot/> Connected</div><p>Module UI and event definitions initialized</p><Tag variant="green">Ready for integration</Tag></div><div className="panel metric-panel"><span className="mini-label">RELATED INCIDENTS</span><div className="metric-number">{related.length}</div><p>Recorded sample and demo events</p><button className="text-action" onClick={()=>setPage('incidents')}>View incident center <ArrowRight size={15}/></button></div></div>
-    <div className="module-lower"><section className="panel"><div className="panel-header"><div><h2><Layers3 size={18}/> Planned capabilities</h2><p>Integration milestones for this module</p></div></div><div className="capability-list">{conf.capabilities.map((x,i)=><div className="capability" key={x}><span className="cap-number">0{i+1}</span><span>{x}</span><Tag variant="neutral">Planned</Tag></div>)}</div><div className="module-next"><strong><ArrowUpRight size={17}/> Suggested next step</strong><p>{conf.next}</p></div></section><section className="panel"><div className="panel-header"><div><h2><Activity size={18}/> Module activity</h2><p>Events connected to {module.name}</p></div></div>{related.length?<IncidentList incidents={related}/>:<div className="empty-module"><Radio size={30}/><h3>No activity yet</h3><p>Trigger a demo scenario to generate your first event.</p></div>}</section></div>
-  </>;
+
+function RiskPanel({ summary, hotspots, eventIdx, selection, setSelection, open, setOpen }) {
+  const hs = selection ? hotspots.find(h => h.id === selection.id) : null;
+  const cur = eventIdx >= 0 ? summary.events[eventIdx] : summary.max5y;
+  return <aside className={`lens glass ${open ? 'is-open' : 'is-collapsed'}`} aria-label="Flood risk">
+    <button className="lens-collapse icon-btn" onClick={() => setOpen(o => !o)} aria-label={open ? 'Collapse panel' : 'Expand panel'}>{open ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}</button>
+    <div className="lens-scroll">
+      <div className="lens-title"><Waves size={18} /><div><h2>Flood risk</h2><span>{eventIdx >= 0 ? `Storm of ${fmtDay(cur.start)}` : 'Sofia · 5-year maximum'}</span></div></div>
+      {hs && <HotspotDetail h={hs} close={() => setSelection(null)} />}
+      <div className="kpi-row">
+        <Kpi label="Flooded area" value={cur.flooded_km2} unit="km²" note="depth ≥10 cm" />
+        <Kpi label="Built-up hit" value={ha(cur.built_flooded_km2)} unit="ha" note="ESA WorldCover" />
+        <Kpi label="Max depth" value={cur.max_depth_m.toFixed(1)} unit="m" note="model" />
+      </div>
+      <div className="list-head"><h4>Problem spots</h4><span>5 years · {hotspots[0]?.events_total} storms</span></div>
+      <ol className="fix-list">
+        {hotspots.map((h, i) => <li key={h.id}><button onClick={() => setSelection({ kind: 'hotspot', id: h.id })}>
+          <span className="fix-rank mono">{String(i + 1).padStart(2, '0')}</span>
+          <span className="fix-body"><strong>{h.name}</strong><small>{h.district} · {h.depth.toFixed(2)} m · {h.events}× flooded</small></span>
+          <RiskBadge score={h.score} />
+        </button></li>)}
+      </ol>
+    </div>
+  </aside>;
 }
-function IncidentsPage({ incidents, clearDemo }) {const [filter,setFilter]=useState('all');const shown=filter==='all'?incidents:incidents.filter(x=>x.severity===filter);return <><div className="page-heading"><div><div className="eyebrow">CITY OPERATIONS / INCIDENT CENTER</div><h1>Incident center</h1><p>One unified activity stream for all CityNerve modules.</p></div><button className="outline-action" onClick={clearDemo}><RefreshCw size={16}/> Reset to sample data</button></div><section className="panel full-panel"><div className="panel-header"><div><h2>All events <span className="count-inline">{shown.length}</span></h2><p>Includes sample readings and triggered demonstration events</p></div><div className="filter-buttons">{['all','high','medium','low'].map(x=><button className={filter===x?'selected':''} onClick={()=>setFilter(x)} key={x}>{x==='all'?'All':x[0].toUpperCase()+x.slice(1)}</button>)}</div></div><IncidentList incidents={shown}/></section></>}
-function DevicesPage(){return <><div className="page-heading"><div><div className="eyebrow">SYSTEM / DEVICE NETWORK</div><h1>Connected devices</h1><p>Device management UI prepared for ESP32 and other IoT integrations.</p></div></div><section className="panel full-panel"><div className="panel-header"><div><h2>Device registry</h2><p>Illustrative hardware configuration — no real devices connected</p></div><Tag variant="amber">Simulation</Tag></div><div className="device-table"><div className="device-header"><span>DEVICE</span><span>MODULE</span><span>CONNECTION</span><span>STATE</span></div>{[['CN-WTR-01','Water-level sensor','FloodNerve'],['CN-GATE-01','Flood barrier servo','FloodNerve'],['CN-VIS-01','Visibility sensor','FogNerve'],['CN-SIGN-01','Road warning sign','FogNerve'],['CN-PARK-01','Parking occupancy','MobilityNerve']].map(([id,name,mod])=><div className="device-entry" key={id}><span><Radio size={17}/><strong>{id}</strong><small>{name}</small></span><span>{mod}</span><span>Not paired</span><span><Tag>Placeholder</Tag></span></div>)}</div></section></>}
-function SettingsPage({ city, cityId, setCityId }){return <><div className="page-heading"><div><div className="eyebrow">SYSTEM / SETTINGS</div><h1>Workspace settings</h1><p>Configuration for your CityNerve demonstration environment.</p></div></div><section className="panel settings-panel"><h2>City configuration</h2><p>Select which European city your demo is currently representing.</p><label htmlFor="settings-city">Active city</label><select id="settings-city" value={cityId} onChange={e=>setCityId(e.target.value)}>{CITIES.map(c=><option key={c.id} value={c.id}>{c.label}, {c.country}</option>)}</select><div className="settings-line"><span>Region</span><strong>{city.region}</strong></div><div className="settings-line"><span>Data mode</span><Tag variant="amber">Simulated / sample</Tag></div><div className="settings-line"><span>Connected APIs</span><strong>None yet</strong></div><div className="settings-line"><span>Environment</span><strong>Hackathon development</strong></div></section></>}
-function Toast({ message, dismiss }){return message?<div className="toast"><span className="toast-symbol"><Check size={18}/></span><div><strong>Scenario activated</strong><small>{message}</small></div><button onClick={dismiss} aria-label="Dismiss notification"><X size={17}/></button></div>:null}
-export default function App(){
-  const [cityId,setCityId]=useState('michalovce');
-  const [page,setPage]=useState('overview');
-  const [incidents,setIncidents]=useState(INITIAL_INCIDENTS);
-  const [mobileOpen,setMobileOpen]=useState(false);
-  const [toast,setToast]=useState('');
-  const city=CITIES.find(c=>c.id===cityId)||CITIES[0];
-  React.useEffect(()=>{const fn=e=>setPage(e.detail);document.addEventListener('cn:navigate',fn);return()=>document.removeEventListener('cn:navigate',fn)},[]);
-  function triggerScenario(key){const s=SCENARIOS[key];if(!s)return;const entry={id:`CN-${Date.now().toString().slice(-7)}`,type:key==='parking'?'mobility':key,title:s.title,location:s.location,severity:s.severity,status:'New',time:nowTime(),source:'Simulated scenario'};setIncidents(old=>[entry,...old]);setToast(`${s.title} — ${s.effects.join(' · ')}`);}
-  const clearDemo=()=>{setIncidents(INITIAL_INCIDENTS);setToast('Incident list reset to initial sample data.')};
-  return <div className="app-shell"><Sidebar page={page} onNavigate={setPage} mobileOpen={mobileOpen} close={()=>setMobileOpen(false)}/><div className="main-area"><Header city={city} setCityId={setCityId} page={page} onMenu={()=>setMobileOpen(true)} incidents={incidents}/><main className="content"><div className="content-inner">{page==='overview'?<Overview city={city} incidents={incidents} setPage={setPage} triggerScenario={triggerScenario}/>:MODULE_KEYS.includes(page)?<ModulePage type={page} city={city} incidents={incidents} setPage={setPage} triggerScenario={triggerScenario}/>:page==='incidents'?<IncidentsPage incidents={incidents} clearDemo={clearDemo}/>:page==='devices'?<DevicesPage/>:<SettingsPage city={city} cityId={cityId} setCityId={setCityId}/>}<footer className="app-footer"><span>© 2026 CityNerve · Hackathon starter</span><span>European cities, connected. <span className="footer-sep">·</span> <strong>DEMO DATA</strong></span></footer></div></main></div><Toast message={toast} dismiss={()=>setToast('')}/></div>;
+
+/* ───────────── top bar ───────────── */
+function MapTopBar({ hotspots, onSearchPick, toggleDock, toggleLens }) {
+  const [q, setQ] = useState('');
+  const [focus, setFocus] = useState(false);
+  const results = q ? hotspots.filter(h => (h.name + h.district).toLowerCase().includes(q.toLowerCase())).slice(0, 6) : hotspots.slice(0, 5);
+  return <header className="topbar">
+    <div className="brand glass">
+      <span className="brand-mark"><Waves size={16} strokeWidth={2.6} /></span>
+      <span className="brand-text"><strong>FloodNerve</strong><small><MapPin size={10} /> {CITY.label}, BG</small></span>
+    </div>
+    <div className={`search glass ${focus ? 'is-focus' : ''}`}>
+      <Search size={15} />
+      <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)} placeholder="Search street or district" aria-label="Search" />
+      {focus && <div className="search-pop">
+        <span className="eyebrow">{q ? 'Matches' : 'Top problem spots'}</span>
+        {results.map(h => <button key={h.id} onMouseDown={() => { onSearchPick(h.id); setQ(''); }}>
+          <span className={`dot d-${riskLevel(h.score)}`} /><span><strong>{h.name}</strong><small>{h.district}</small></span><ArrowUpRight size={13} />
+        </button>)}
+        {!results.length && <p className="muted">No problem spot matches.</p>}
+      </div>}
+    </div>
+    <div className="top-actions">
+      <button className="ghost-btn glass mobile-only" onClick={toggleDock}><SlidersHorizontal size={15} /><span>Storms</span></button>
+      <button className="ghost-btn glass mobile-only" onClick={toggleLens}><PanelRightOpen size={15} /><span>Risk</span></button>
+    </div>
+  </header>;
+}
+
+function CameraControls({ map }) {
+  const [is3d, set3d] = useState(true);
+  if (!map) return null;
+  return <div className="camera glass" aria-label="Camera">
+    <button onClick={() => map.zoomIn()} aria-label="Zoom in"><Plus size={16} /></button>
+    <button onClick={() => map.zoomOut()} aria-label="Zoom out"><Minus size={16} /></button>
+    <button onClick={() => { const n = !is3d; set3d(n); map.easeTo({ pitch: n ? CITY.pitch : 0, duration: 900 }); }} aria-label="Toggle 3D" className="txt">{is3d ? '2D' : '3D'}</button>
+    <button onClick={() => { set3d(true); map.flyTo({ center: CITY.center, zoom: CITY.zoom, pitch: CITY.pitch, bearing: CITY.bearing, duration: 1600 }); }} aria-label="Reset view"><RotateCcw size={15} /></button>
+  </div>;
+}
+
+function DataState({ loading, error }) {
+  return <div className="data-state glass">
+    {loading ? <><Loader2 size={18} className="spin" /> Loading NASA-based model results…</>
+      : <><TriangleAlert size={18} /> Model results not found ({error}). Run the pipeline: <code>npm run data</code></>}
+  </div>;
+}
+
+/* ───────────── pages ───────────── */
+function MapPage({ data }) {
+  const { summary, hotspots } = data;
+  const [eventIdx, setEventIdx] = useState(-1);
+  const [hour, setHour] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [selection, setSelection] = useState(null);
+  const [map, setMap] = useState(null);
+  const [dockOpen, setDockOpen] = useState(false);
+  const [lensOpen, setLensOpen] = useState(() => window.innerWidth > 860);
+  const [layers, setLayers] = useState({ extent: true, depth3d: true, flow: true, hotspots: true, lidar: false, buildings: true, terrain: true });
+
+  const ev = summary && eventIdx >= 0 ? summary.events[eventIdx] : null;
+  useEffect(() => {
+    if (!ev) return;
+    setHour(ev.level.indexOf(Math.max(...ev.level)));   // open at the peak
+    setPlaying(false);
+  }, [eventIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!playing || !ev) return;
+    const id = setInterval(() => setHour(h => (h >= ev.rain.length - 1 ? 0 : h + 1)), 180);
+    return () => clearInterval(id);
+  }, [playing, ev]);
+
+  useEffect(() => {
+    if (!map || !selection) return;
+    const item = hotspots.find(h => h.id === selection.id);
+    if (item) map.flyTo({ center: item.coord, zoom: 15.4, pitch: 62, bearing: map.getBearing() + 12, duration: 1800, padding: { right: window.innerWidth > 900 ? 360 : 0 } });
+  }, [selection, map]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const factor = ev ? (ev.level[hour] ?? 0) : 1;
+  const png = summary ? (ev ? ev.png : summary.max5y.png) : null;
+
+  return <div className="map-page">
+    <FloodMap summary={summary} hotspots={hotspots} png={png} factor={factor} layers={layers} selectedId={selection?.id} onSelect={setSelection} onReady={setMap} />
+    <div className="map-vignette" aria-hidden="true" />
+    <MapTopBar hotspots={hotspots} onSearchPick={id => setSelection({ kind: 'hotspot', id })} toggleDock={() => setDockOpen(o => !o)} toggleLens={() => setLensOpen(o => !o)} />
+    {summary ? <>
+      <StormDock summary={summary} eventIdx={eventIdx} setEventIdx={setEventIdx} layers={layers} setLayers={setLayers} open={dockOpen} close={() => setDockOpen(false)} />
+      <RiskPanel summary={summary} hotspots={hotspots} eventIdx={eventIdx} selection={selection} setSelection={setSelection} open={lensOpen} setOpen={setLensOpen} />
+      <CameraControls map={map} />
+      {ev ? <EventTimeline ev={ev} hour={hour} setHour={setHour} playing={playing} setPlaying={setPlaying} />
+        : <RecordTimeline summary={summary} onPick={setEventIdx} />}
+      <div className="demo-chip"><Check size={12} /> NASA GPM IMERG · MERRA-2 · ICESat-2 · SRTM — screening model</div>
+    </> : <DataState loading={data.loading} error={data.error} />}
+  </div>;
+}
+
+function RegisterPage({ data }) {
+  const { summary, hotspots } = data;
+  const [filter, setFilter] = useState('all');
+  if (!summary) return <div className="page"><DataState loading={data.loading} error={data.error} /></div>;
+  const rows = hotspots.filter(h => filter === 'all' || riskLevel(h.score) === filter);
+  const levels = ['critical', 'high', 'moderate', 'low'].filter(l => hotspots.some(h => riskLevel(h.score) === l));
+  return <div className="page">
+    <header className="page-head">
+      <span className="eyebrow">Sofia · {fmtDay(summary.period.start)} – {fmtDay(summary.period.end)}</span>
+      <h1>Risk register</h1>
+      <p>Built-up places where the model, driven by {summary.rain.events_confirmed} real storms from NASA satellite rainfall, puts at least 30 cm of water. Ranked by depth, how often it happens and how much built-up land is hit.</p>
+    </header>
+    <div className="page-kpis">
+      <Kpi label="Problem spots" value={hotspots.length} />
+      <Kpi label="Storms analysed" value={summary.rain.events_confirmed} note={`of ${summary.rain.events_found} found`} />
+      <Kpi label="Max flooded area" value={summary.max5y.flooded_km2} unit="km²" />
+      <Kpi label="Built-up hit (max)" value={ha(summary.max5y.built_flooded_km2)} unit="ha" />
+    </div>
+    <div className="filters">
+      {['all', ...levels].map(f => <button key={f} className={filter === f ? 'is-on' : ''} onClick={() => setFilter(f)}>{f === 'all' ? 'All levels' : RISK[f].label}</button>)}
+    </div>
+    <div className="table-wrap">
+      <table className="reg-table">
+        <thead><tr><th>Location</th><th>Risk</th><th>Cause</th><th className="num">Max depth</th><th className="num">Flooded</th><th className="num">Above flood level</th><th className="num">Built-up hit</th><th>Worst storm</th><th>Suggested action</th></tr></thead>
+        <tbody>
+          {rows.map(h => <tr key={h.id}>
+            <td><strong>{h.name}</strong><small>{h.id} · {h.district}</small></td>
+            <td><RiskBadge score={h.score} /><span className="score-bar"><i style={{ width: `${h.score}%` }} /></span></td>
+            <td>{CAUSE[h.cause]}</td>
+            <td className="num mono">{h.depth.toFixed(2)} m</td>
+            <td className="num mono">{h.events} / {h.events_total}</td>
+            <td className="num mono">~{h.duration_h} h</td>
+            <td className="num mono">{(h.built_m2 / 1e4).toFixed(1)} ha</td>
+            <td className="mono">{fmtDay(h.worst_event)}</td>
+            <td className="fix-cell">{h.fix}</td>
+          </tr>)}
+        </tbody>
+      </table>
+    </div>
+    <p className="foot-note"><Info size={13} /> Screening model at 28 m resolution. Not an official flood map; channels, culverts and sewers are not surveyed.</p>
+  </div>;
+}
+
+function SourcesPage({ data }) {
+  const { summary } = data;
+  if (!summary) return <div className="page"><DataState loading={data.loading} error={data.error} /></div>;
+  const L = summary.lidar, Rn = summary.rain;
+  const sources = [
+    { kind: 'Lidar', name: 'ICESat-2 (ATL03 → ATL08 ground)', agency: 'NASA · via SlideRule', status: 'live',
+      role: `${L.segments_used.toLocaleString('en')} ground segments ${L.first} – ${L.last}. Terrain error ${L.rmse_before_m} → ${L.rmse_after_m} m after correction.`,
+      res: '40 m segments', cadence: '91-day repeat' },
+    { kind: 'Terrain', name: 'SRTM 1″', agency: 'NASA / NGA · AWS Terrain Tiles', status: 'live',
+      role: `${summary.grid.rows}×${summary.grid.cols} cells, ${summary.dem.min_m}–${summary.dem.max_m} m. Roof bias ${L.built_bias_m} m, canopy bias ${L.tree_bias_m} m removed.`,
+      res: `${summary.grid.cell_m} m`, cadence: 'Static' },
+    { kind: 'Precipitation', name: 'GPM IMERG', agency: 'NASA / JAXA · via NASA POWER', status: 'live',
+      role: `Daily satellite rain, ${Rn.total_mm.toLocaleString('en')} mm in 5 years (${Rn.annual_mean_mm} mm/yr). Rain vs snow from IMERG liquid probability.`,
+      res: '0.1°', cadence: 'Daily' },
+    { kind: 'Reanalysis', name: 'MERRA-2', agency: 'NASA GMAO · via NASA POWER', status: 'live',
+      role: `${Rn.hours.toLocaleString('en')} hours: hourly rain pattern, surface soil wetness, temperature.`,
+      res: '0.5° × 0.625°', cadence: 'Hourly' },
+    { kind: 'Validation', name: 'ERA5', agency: 'ECMWF · via Open-Meteo', status: 'live',
+      role: `Independent check: ${Rn.events_confirmed} of ${Rn.events_found} storms confirmed.`, res: '0.25°', cadence: 'Hourly' },
+    { kind: 'Land cover', name: 'WorldCover 2021', agency: 'ESA · Sentinel-1/2', status: 'live',
+      role: `Built-up, vegetation and water at 10 m → runoff curve numbers. ${Math.round(summary.landcover.built_share * 100)}% of the area is built-up.`, res: '10 m', cadence: '2021' },
+    { kind: 'Soil', name: 'SMAP L4', agency: 'NASA', status: 'login', role: 'Finer soil moisture (9 km, 3-hourly). Needs a free NASA Earthdata login.', res: '9 km', cadence: '3 h' },
+    { kind: 'Precipitation', name: 'GPM IMERG half-hourly', agency: 'NASA', status: 'login', role: 'Real 30-min storm intensities instead of daily totals. Needs Earthdata login.', res: '0.1°', cadence: '30 min' },
+  ];
+  const statusLabel = { live: 'Connected', login: 'Needs login' };
+  return <div className="page">
+    <header className="page-head">
+      <span className="eyebrow">From orbit to street</span>
+      <h1>Data & model</h1>
+      <p>Every number on the map comes from this chain: NASA satellite rain and lidar, terrain and land cover, run through a transparent flood screening model for Sofia. Generated {fmtDay(summary.generated)}.</p>
+    </header>
+    <ol className="pipeline">
+      {PIPELINE.map(p => <li key={p.step}><span className="mono step">{p.step}</span><h3>{p.title}</h3><p>{p.text}</p></li>)}
+    </ol>
+    <div className="list-head wide"><h4>Inputs</h4><span>{sources.filter(s => s.status === 'live').length} connected · period {summary.period.start} → {summary.period.end}</span></div>
+    <div className="source-grid">
+      {sources.map(d => <article key={d.name} className="source-card">
+        <div className="source-top"><span className="source-kind">{d.kind}</span><span className={`st st-${d.status === 'live' ? 'live' : 'research'}`}>{statusLabel[d.status]}</span></div>
+        <h3>{d.name}</h3>
+        <span className="source-agency">{d.agency}</span>
+        <p>{d.role}</p>
+        <div className="source-meta"><span><b>Resolution</b>{d.res}</span><span><b>Cadence</b>{d.cadence}</span></div>
+      </article>)}
+    </div>
+    <div className="list-head wide"><h4>Limits — read before using</h4><span>screening, not engineering design</span></div>
+    <ul className="limits">
+      <li>Terrain is 28 m: underpasses, curbs and culverts narrower than that are not visible to the model.</li>
+      <li>Storm-sewer capacity is assumed ({summary.model.sewer_mm_h} mm/h over built-up catchments, {summary.model.ditch_mm_h} mm/h elsewhere); Sofia's real network is not public.</li>
+      <li>Rain intensity within a day comes from MERRA-2's hourly pattern, so short cloudbursts are smoothed and urban ponding is underestimated.</li>
+      <li>River channels are treated as natural; concrete channels of the Vladayska and Perlovska carry more than the model assumes.</li>
+      <li>Low points are kept only if they persist in ≥{Math.round(summary.model.depression_prob * 100)}% of {summary.model.realisations} terrain realisations with ICESat-2-measured error ({L.rmse_after_m} m).</li>
+    </ul>
+  </div>;
+}
+
+export default function App() {
+  const [page, setPage] = useState('map');
+  const data = useFloodData();
+  return <div className="shell">
+    <Rail page={page} setPage={setPage} />
+    <main className={`main main-${page}`}>
+      {page === 'map' && <MapPage data={data} />}
+      {page === 'register' && <RegisterPage data={data} />}
+      {page === 'sources' && <SourcesPage data={data} />}
+    </main>
+  </div>;
 }

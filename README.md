@@ -1,6 +1,8 @@
-# CityNerve — Hackathon UI Starter
+# FloodNerve · Sofia — Flood-risk UI prototype
 
-A responsive React + Vite interface for a modular European smart-city platform.
+A 3D flood-risk interface for Sofia, Bulgaria. It is designed to visualise how storm water moves and ponds across the city using free NASA Earth-observation data (NASADEM, ICESat-2 / G-LiHT lidar, GPM IMERG rainfall, SMAP soil moisture, HLS land cover) combined with OpenStreetMap.
+
+Audiences: **municipality** (where to fix first), **insurers** (exposure and expected loss) and **funds / investors** (flood screening of data-centre sites).
 
 ## Start
 
@@ -22,18 +24,15 @@ npm run preview
 
 ## Included
 
-- Responsive control-center dashboard and navigation
-- Five module pages: FloodNerve, FogNerve, HeatNerve, MobilityNerve, AlertNerve
-- City selector: Michalovce, Bratislava, Valencia, Rotterdam
-- Illustrative city map with clickable module pins (not geographic mapping)
-- Incident center with severity filters
-- Scenario buttons that generate synthetic incidents
-- Device registry placeholders and settings page
-- Dark UI using plain CSS and `lucide-react`
+- Full-screen 3D map (MapLibre GL + OpenStreetMap, SRTM terrain, 3D OSM buildings)
+- **Real flood model results** for Sofia from NASA GPM IMERG rain, MERRA-2 soil wetness, ICESat-2 lidar and SRTM terrain, covering the last 5 years: flood depth per real storm, 5-year maximum, river network, problem spots with real storm dates
+- Storm list, hourly timeline with playback, risk register and data & model pages
 
-## Important: sample data
+Data is produced by the Python pipeline in [pipeline/](pipeline/README.md) (`npm run data`).
 
-This starter is a **frontend-only prototype**. All readings, incidents, device statuses, and map geometry are illustrative. No weather API, satellite feed, database, municipal system, or actual ESP32 hardware is connected yet. Incident changes live in React state and reset on page reload. A scenario triggers an event in the UI; it does **not** activate a real barrier or send actual emergency messages.
+## Important: what is real
+
+Map, terrain, rainfall, soil wetness, lidar and land cover are real data (NASA SRTM, ICESat-2, GPM IMERG, MERRA-2; ESA WorldCover; OpenStreetMap). The flood depths and problem spots are outputs of a **screening model** run on that data (see `pipeline/README.md` for method and limits). It is not an official flood map: sewer capacity is assumed, terrain is 28 m, and rain intensity within a day is smoothed.
 
 ## Where to start integrating
 
