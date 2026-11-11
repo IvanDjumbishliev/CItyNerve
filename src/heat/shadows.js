@@ -1,16 +1,25 @@
 import SunCalc from "suncalc";
 
 // The slider uses Sofia summer civil time (UTC+3), independent of browser timezone.
-export function sunPosition(day, hour) {
-  return SunCalc.getPosition(
-    new Date(day + "T00:00:00+03:00").getTime() + hour * 3600000,
-    42.692,
-    23.338,
-  );
+export function sunPosition(
+  day,
+  hour,
+  town = { center: [23.338, 42.692], timeZone: "Europe/Sofia" },
+) {
+  const noon = new Date(day + "T12:00:00Z");
+  const zone = new Intl.DateTimeFormat("en", {
+    timeZone: town.timeZone,
+    timeZoneName: "shortOffset",
+  })
+    .formatToParts(noon)
+    .find((p) => p.type === "timeZoneName").value;
+  const offset = Number(zone.replace("GMT", "")) || 0;
+  const instant = new Date(day + "T00:00:00Z").getTime() + (hour - offset) * 3600000;
+  return SunCalc.getPosition(instant, town.center[1], town.center[0]);
 }
 
-export function buildingShadows(buildings, day, hour) {
-  const sun = sunPosition(day, hour);
+export function buildingShadows(buildings, day, hour, town) {
+  const sun = sunPosition(day, hour, town);
   if (sun.altitude <= 0) return { type: "FeatureCollection", features: [] };
   const features = [];
   for (const building of buildings.features) {
