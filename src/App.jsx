@@ -1,360 +1,1052 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from "react";
 import {
-  Waves, Map as MapIcon, ListOrdered, Satellite, Search, X, Play, Pause, Mountain, Building2, Droplets,
-  Navigation, Box, Plus, Minus, RotateCcw, Info, CloudRain, Gauge, Wrench, ArrowUpRight, SlidersHorizontal,
-  PanelRightClose, PanelRightOpen, CircleAlert, MapPin, ScanLine, CalendarDays, Check, Loader2, TriangleAlert,
-  LayoutDashboard, Siren, CloudRain as RainIcon, CloudFog, ThermometerSun, CarFront, BellRing, Radio, Settings2,
-  Zap, Square, Timer, Home, Maximize2,
-} from 'lucide-react';
-import FloodMap from './FloodMap.jsx';
-import { CITY, RISK, CAUSE, riskLevel, PIPELINE } from './data.js';
-import { useFloodData } from './useFloodData.js';
-import { loadDam, levelOn, startSim, stopSim, pauseSim, playSim, setSimSpeed, showMaxExtent, onStats } from './damSim.js';
-import LegacyApp from './legacy/LegacyApp.jsx';
-import './legacy/legacy.css';
+  Waves,
+  Map as MapIcon,
+  ListOrdered,
+  Satellite,
+  Search,
+  X,
+  Play,
+  Pause,
+  Mountain,
+  Building2,
+  Droplets,
+  Navigation,
+  Box,
+  Plus,
+  Minus,
+  RotateCcw,
+  Info,
+  CloudRain,
+  Gauge,
+  Wrench,
+  ArrowUpRight,
+  SlidersHorizontal,
+  PanelRightClose,
+  PanelRightOpen,
+  CircleAlert,
+  MapPin,
+  ScanLine,
+  CalendarDays,
+  Check,
+  Loader2,
+  TriangleAlert,
+  LayoutDashboard,
+  Siren,
+  CloudRain as RainIcon,
+  CloudFog,
+  ThermometerSun,
+  CarFront,
+  BellRing,
+  Radio,
+  Settings2,
+  Zap,
+  Square,
+  Timer,
+  Home,
+  Maximize2,
+} from "lucide-react";
+import HeatPage from "./HeatPage.jsx";
+import FloodMap from "./FloodMap.jsx";
+import { CITY, RISK, CAUSE, riskLevel, PIPELINE } from "./data.js";
+import { useFloodData } from "./useFloodData.js";
+import {
+  loadDam,
+  levelOn,
+  startSim,
+  stopSim,
+  pauseSim,
+  playSim,
+  setSimSpeed,
+  showMaxExtent,
+  onStats,
+} from "./damSim.js";
+import LegacyApp from "./legacy/LegacyApp.jsx";
+import "./legacy/legacy.css";
 
-const TZ = 'Europe/Sofia';
-const fmtDay = (iso) => new Date(iso).toLocaleDateString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric' });
-const fmtDayShort = (iso) => new Date(iso).toLocaleDateString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' });
-const fmtTime = (d) => d.toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const TZ = "Europe/Sofia";
+const fmtDay = (iso) =>
+  new Date(iso).toLocaleDateString("en-GB", {
+    timeZone: TZ,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+const fmtDayShort = (iso) =>
+  new Date(iso).toLocaleDateString("en-GB", { timeZone: TZ, day: "numeric", month: "short" });
+const fmtTime = (d) =>
+  d.toLocaleString("en-GB", {
+    timeZone: TZ,
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 const addHours = (iso, h) => new Date(new Date(iso).getTime() + h * 3600e3);
 const ha = (km2) => Math.round(km2 * 100);
 
 /* ───────────── small UI atoms ───────────── */
 function RiskBadge({ score, showScore = true }) {
   const lvl = riskLevel(score);
-  return <span className={`risk-badge rb-${lvl}`}><CircleAlert size={12} strokeWidth={2.4} />{RISK[lvl].label}{showScore && <b>{score}</b>}</span>;
+  return (
+    <span className={`risk-badge rb-${lvl}`}>
+      <CircleAlert size={12} strokeWidth={2.4} />
+      {RISK[lvl].label}
+      {showScore && <b>{score}</b>}
+    </span>
+  );
 }
 function Kpi({ label, value, unit, note }) {
-  return <div className="kpi"><span className="kpi-label">{label}</span><span className="kpi-value">{value}<small>{unit}</small></span>{note && <span className="kpi-note">{note}</span>}</div>;
+  return (
+    <div className="kpi">
+      <span className="kpi-label">{label}</span>
+      <span className="kpi-value">
+        {value}
+        <small>{unit}</small>
+      </span>
+      {note && <span className="kpi-note">{note}</span>}
+    </div>
+  );
 }
 function Toggle({ on, onChange, icon: Icon, label, hint }) {
-  return <button className={`toggle ${on ? 'is-on' : ''}`} onClick={() => onChange(!on)} role="switch" aria-checked={on}>
-    <Icon size={15} /><span className="toggle-text">{label}{hint && <small>{hint}</small>}</span><span className="switch"><i /></span>
-  </button>;
+  return (
+    <button
+      className={`toggle ${on ? "is-on" : ""}`}
+      onClick={() => onChange(!on)}
+      role="switch"
+      aria-checked={on}
+    >
+      <Icon size={15} />
+      <span className="toggle-text">
+        {label}
+        {hint && <small>{hint}</small>}
+      </span>
+      <span className="switch">
+        <i />
+      </span>
+    </button>
+  );
 }
 
 /* ───────────── navigation rail ───────────── */
 const RAIL_GROUPS = [
-  { label: null, items: [['map', 'Flood map', MapIcon], ['register', 'Risk register', ListOrdered], ['sources', 'Data & model', Satellite]] },
-  { label: 'Platform', items: [
-    ['l-overview', 'Overview', LayoutDashboard], ['l-incidents', 'Incidents', Siren], ['l-flood', 'Flood', RainIcon],
-    ['l-fog', 'Fog', CloudFog], ['l-heat', 'Heat', ThermometerSun], ['l-mobility', 'Mobility', CarFront],
-    ['l-alert', 'Alerts', BellRing], ['l-devices', 'Devices', Radio], ['l-settings', 'Settings', Settings2],
-  ] },
+  {
+    label: null,
+    items: [
+      ["map", "Flood map", MapIcon],
+      ["register", "Risk register", ListOrdered],
+      ["sources", "Data & model", Satellite],
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      ["l-overview", "Overview", LayoutDashboard],
+      ["l-incidents", "Incidents", Siren],
+      ["l-flood", "Flood", RainIcon],
+      ["l-fog", "Fog", CloudFog],
+      ["l-heat", "Heat", ThermometerSun],
+      ["l-mobility", "Mobility", CarFront],
+      ["l-alert", "Alerts", BellRing],
+      ["l-devices", "Devices", Radio],
+      ["l-settings", "Settings", Settings2],
+    ],
+  },
 ];
 
 function Rail({ page, setPage }) {
-  return <nav className="rail" aria-label="Main">
-    <div className="rail-logo" title="FloodNerve"><Waves size={20} strokeWidth={2.4} /></div>
-    <div className="rail-items">
-      {RAIL_GROUPS.map((g, gi) => <div className="rail-group" key={gi}>
-        {g.label && <span className="rail-group-label">{g.label}</span>}
-        {g.items.map(([id, label, Icon]) => <button key={id} className={`rail-btn ${page === id ? 'is-active' : ''}`} onClick={() => setPage(id)} aria-current={page === id} title={label}>
-          <Icon size={19} /><span>{label}</span>
-        </button>)}
-      </div>)}
-    </div>
-    <div className="rail-foot"><span className="pulse-dot live" /><span className="rail-foot-text">NASA data</span></div>
-  </nav>;
+  return (
+    <nav className="rail" aria-label="Main">
+      <div className="rail-logo" title="FloodNerve">
+        <Waves size={20} strokeWidth={2.4} />
+      </div>
+      <div className="rail-items">
+        {RAIL_GROUPS.map((g, gi) => (
+          <div className="rail-group" key={gi}>
+            {g.label && <span className="rail-group-label">{g.label}</span>}
+            {g.items.map(([id, label, Icon]) => (
+              <button
+                key={id}
+                className={`rail-btn ${page === id ? "is-active" : ""}`}
+                onClick={() => setPage(id)}
+                aria-current={page === id}
+                title={label}
+              >
+                <Icon size={19} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="rail-foot">
+        <span className="pulse-dot live" />
+        <span className="rail-foot-text">NASA data</span>
+      </div>
+    </nav>
+  );
 }
 
 /* ───────────── timeline ───────────── */
 function EventTimeline({ ev, hour, setHour, playing, setPlaying }) {
-  const W = 480, H = 74, n = ev.rain.length;
+  const W = 480,
+    H = 74,
+    n = ev.rain.length;
   const maxRain = Math.max(...ev.rain, 0.5);
   const bw = W / n;
   const xAt = (i) => (i / Math.max(1, n - 1)) * W;
-  const line = ev.level.map((v, i) => `${i ? 'L' : 'M'}${xAt(i).toFixed(1)} ${(H - 4 - v * 38).toFixed(1)}`).join(' ');
-  const area = `M0 ${H} ` + ev.level.map((v, i) => `L${xAt(i).toFixed(1)} ${(H - 4 - v * 38).toFixed(1)}`).join(' ') + ` L${W} ${H} Z`;
+  const line = ev.level
+    .map((v, i) => `${i ? "L" : "M"}${xAt(i).toFixed(1)} ${(H - 4 - v * 38).toFixed(1)}`)
+    .join(" ");
+  const area =
+    `M0 ${H} ` +
+    ev.level.map((v, i) => `L${xAt(i).toFixed(1)} ${(H - 4 - v * 38).toFixed(1)}`).join(" ") +
+    ` L${W} ${H} Z`;
   const now = addHours(ev.window_start, hour);
   const peak = ev.level.indexOf(Math.max(...ev.level));
   const lvl = ev.level[Math.round(hour)] ?? 0;
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(f * (n - 1)));
-  return <section className="timeline glass" aria-label="Storm timeline">
-    <div className="tl-head">
-      <button className="play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pause' : 'Play storm'}>{playing ? <Pause size={16} /> : <Play size={16} />}</button>
-      <div className="tl-clock"><span className="mono big">{fmtTime(now)}</span><span className="tl-sub">{Math.abs(hour - peak) < 1 ? 'Peak water' : hour < peak ? 'Water rising' : 'Receding'} · local time</span></div>
-      <div className="tl-reads">
-        <span><CloudRain size={13} /> <b className="mono">{(ev.rain[Math.round(hour)] ?? 0).toFixed(1)}</b> mm/h</span>
-        <span><Gauge size={13} /> <b className="mono">{Math.round(lvl * 100)}%</b> of event peak</span>
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(f * (n - 1)));
+  return (
+    <section className="timeline glass" aria-label="Storm timeline">
+      <div className="tl-head">
+        <button
+          className="play"
+          onClick={() => setPlaying((p) => !p)}
+          aria-label={playing ? "Pause" : "Play storm"}
+        >
+          {playing ? <Pause size={16} /> : <Play size={16} />}
+        </button>
+        <div className="tl-clock">
+          <span className="mono big">{fmtTime(now)}</span>
+          <span className="tl-sub">
+            {Math.abs(hour - peak) < 1 ? "Peak water" : hour < peak ? "Water rising" : "Receding"} ·
+            local time
+          </span>
+        </div>
+        <div className="tl-reads">
+          <span>
+            <CloudRain size={13} />{" "}
+            <b className="mono">{(ev.rain[Math.round(hour)] ?? 0).toFixed(1)}</b> mm/h
+          </span>
+          <span>
+            <Gauge size={13} /> <b className="mono">{Math.round(lvl * 100)}%</b> of event peak
+          </span>
+        </div>
       </div>
-    </div>
-    <div className="tl-chart">
-      <div className="tl-lane-labels"><span>Rain</span><span>Water</span></div>
-      <div className="tl-svg-wrap">
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-          {ev.rain.map((r, i) => <rect key={i} x={i * bw + bw * 0.15} y={0} width={bw * 0.7} height={Math.max(0.4, (r / maxRain) * 26)} rx="1" className={i <= hour ? 'rain-bar past' : 'rain-bar'} />)}
-          <line x1="0" x2={W} y1="31" y2="31" className="tl-divider" />
-          <path d={area} className="level-area" />
-          <path d={line} className="level-line" vectorEffect="non-scaling-stroke" />
-          <line x1={xAt(hour)} x2={xAt(hour)} y1="0" y2={H} className="tl-cursor" vectorEffect="non-scaling-stroke" />
-        </svg>
-        <input type="range" min="0" max={n - 1} step="1" value={hour} onChange={e => { setPlaying(false); setHour(+e.target.value); }} aria-label="Scrub storm hour" />
-        <div className="tl-ticks">{ticks.map(i => <span key={i}>{fmtTime(addHours(ev.window_start, i)).replace(',', '')}</span>)}</div>
+      <div className="tl-chart">
+        <div className="tl-lane-labels">
+          <span>Rain</span>
+          <span>Water</span>
+        </div>
+        <div className="tl-svg-wrap">
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+            {ev.rain.map((r, i) => (
+              <rect
+                key={i}
+                x={i * bw + bw * 0.15}
+                y={0}
+                width={bw * 0.7}
+                height={Math.max(0.4, (r / maxRain) * 26)}
+                rx="1"
+                className={i <= hour ? "rain-bar past" : "rain-bar"}
+              />
+            ))}
+            <line x1="0" x2={W} y1="31" y2="31" className="tl-divider" />
+            <path d={area} className="level-area" />
+            <path d={line} className="level-line" vectorEffect="non-scaling-stroke" />
+            <line
+              x1={xAt(hour)}
+              x2={xAt(hour)}
+              y1="0"
+              y2={H}
+              className="tl-cursor"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          <input
+            type="range"
+            min="0"
+            max={n - 1}
+            step="1"
+            value={hour}
+            onChange={(e) => {
+              setPlaying(false);
+              setHour(+e.target.value);
+            }}
+            aria-label="Scrub storm hour"
+          />
+          <div className="tl-ticks">
+            {ticks.map((i) => (
+              <span key={i}>{fmtTime(addHours(ev.window_start, i)).replace(",", "")}</span>
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
-  </section>;
+    </section>
+  );
 }
 
 function RecordTimeline({ summary, onPick }) {
-  const W = 480, H = 74, days = summary.daily, n = days.length;
-  const max = Math.max(...days.map(d => d[1]));
-  const path = days.map(([, v], i) => v > 0.5 ? `M${(i / n * W).toFixed(1)} ${H - 2} V${(H - 2 - (v / max) * (H - 8)).toFixed(1)}` : '').join('');
+  const W = 480,
+    H = 74,
+    days = summary.daily,
+    n = days.length;
+  const max = Math.max(...days.map((d) => d[1]));
+  const path = days
+    .map(([, v], i) =>
+      v > 0.5
+        ? `M${((i / n) * W).toFixed(1)} ${H - 2} V${(H - 2 - (v / max) * (H - 8)).toFixed(1)}`
+        : "",
+    )
+    .join("");
   const dayIndex = Object.fromEntries(days.map(([d], i) => [d, i]));
   const years = Object.keys(summary.rain.yearly_mm);
-  return <section className="timeline glass" aria-label="Five-year rain record">
-    <div className="tl-head">
-      <span className="play static"><CalendarDays size={16} /></span>
-      <div className="tl-clock"><span className="mono big">{fmtDay(summary.period.start)} – {fmtDay(summary.period.end)}</span><span className="tl-sub">Daily rain, 5 years · map shows the deepest water from the 8 largest storms</span></div>
-      <div className="tl-reads">
-        <span><CloudRain size={13} /> <b className="mono">{summary.rain.annual_mean_mm}</b> mm/yr</span>
-        <span><Droplets size={13} /> wettest day <b className="mono">{summary.rain.wettest_day.mm}</b> mm</span>
+  return (
+    <section className="timeline glass" aria-label="Five-year rain record">
+      <div className="tl-head">
+        <span className="play static">
+          <CalendarDays size={16} />
+        </span>
+        <div className="tl-clock">
+          <span className="mono big">
+            {fmtDay(summary.period.start)} – {fmtDay(summary.period.end)}
+          </span>
+          <span className="tl-sub">
+            Daily rain, 5 years · map shows the deepest water from the 8 largest storms
+          </span>
+        </div>
+        <div className="tl-reads">
+          <span>
+            <CloudRain size={13} /> <b className="mono">{summary.rain.annual_mean_mm}</b> mm/yr
+          </span>
+          <span>
+            <Droplets size={13} /> wettest day <b className="mono">{summary.rain.wettest_day.mm}</b>{" "}
+            mm
+          </span>
+        </div>
       </div>
-    </div>
-    <div className="tl-chart">
-      <div className="tl-lane-labels"><span>Rain</span><span>/day</span></div>
-      <div className="tl-svg-wrap">
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-          <path d={path} className="daily-bars" vectorEffect="non-scaling-stroke" />
-        </svg>
-        {summary.events.map((e, i) => {
-          const idx = dayIndex[e.start.slice(0, 10)];
-          if (idx == null) return null;
-          return <button key={e.id} className="ev-tick" style={{ left: `${(idx / n) * 100}%` }} onClick={() => onPick(i)} title={`${fmtDay(e.start)} · ${e.total_mm} mm`} aria-label={`Open storm of ${fmtDay(e.start)}`} />;
-        })}
-        <div className="tl-ticks">{years.map(y => <span key={y}>{y}</span>)}</div>
+      <div className="tl-chart">
+        <div className="tl-lane-labels">
+          <span>Rain</span>
+          <span>/day</span>
+        </div>
+        <div className="tl-svg-wrap">
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+            <path d={path} className="daily-bars" vectorEffect="non-scaling-stroke" />
+          </svg>
+          {summary.events.map((e, i) => {
+            const idx = dayIndex[e.start.slice(0, 10)];
+            if (idx == null) return null;
+            return (
+              <button
+                key={e.id}
+                className="ev-tick"
+                style={{ left: `${(idx / n) * 100}%` }}
+                onClick={() => onPick(i)}
+                title={`${fmtDay(e.start)} · ${e.total_mm} mm`}
+                aria-label={`Open storm of ${fmtDay(e.start)}`}
+              />
+            );
+          })}
+          <div className="tl-ticks">
+            {years.map((y) => (
+              <span key={y}>{y}</span>
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
-  </section>;
+    </section>
+  );
 }
 
 /* ───────────── left dock: real storms + layers ───────────── */
 function StormDock({ summary, eventIdx, setEventIdx, layers, setLayers, open, close }) {
-  const set = (k) => (v) => setLayers(l => ({ ...l, [k]: v }));
+  const set = (k) => (v) => setLayers((l) => ({ ...l, [k]: v }));
   const ev = eventIdx >= 0 ? summary.events[eventIdx] : null;
-  return <aside className={`dock glass ${open ? 'is-open' : ''}`} aria-label="Storms and layers">
-    <button className="sheet-close icon-btn" onClick={close} aria-label="Close"><X size={16} /></button>
-    <div className="dock-section">
-      <h3 className="eyebrow">Real storms · last 5 years</h3>
-      <div className="storm-list">
-        <button className={`storm ${eventIdx === -1 ? 'is-on' : ''}`} onClick={() => setEventIdx(-1)}>
-          <span className="storm-date">5-year maximum</span><span className="storm-meta mono">{summary.max5y.flooded_km2} km²</span>
-        </button>
-        {summary.events.map((e, i) => <button key={e.id} className={`storm ${eventIdx === i ? 'is-on' : ''}`} onClick={() => setEventIdx(i)}>
-          <span className="storm-date">{fmtDay(e.start)}</span>
-          <span className="storm-meta mono">{Math.round(e.total_mm)} mm</span>
-        </button>)}
+  return (
+    <aside className={`dock glass ${open ? "is-open" : ""}`} aria-label="Storms and layers">
+      <button className="sheet-close icon-btn" onClick={close} aria-label="Close">
+        <X size={16} />
+      </button>
+      <div className="dock-section">
+        <h3 className="eyebrow">Real storms · last 5 years</h3>
+        <div className="storm-list">
+          <button
+            className={`storm ${eventIdx === -1 ? "is-on" : ""}`}
+            onClick={() => setEventIdx(-1)}
+          >
+            <span className="storm-date">5-year maximum</span>
+            <span className="storm-meta mono">{summary.max5y.flooded_km2} km²</span>
+          </button>
+          {summary.events.map((e, i) => (
+            <button
+              key={e.id}
+              className={`storm ${eventIdx === i ? "is-on" : ""}`}
+              onClick={() => setEventIdx(i)}
+            >
+              <span className="storm-date">{fmtDay(e.start)}</span>
+              <span className="storm-meta mono">{Math.round(e.total_mm)} mm</span>
+            </button>
+          ))}
+        </div>
+        {ev ? (
+          <div className="readouts">
+            <div>
+              <span>Rain (GPM)</span>
+              <b className="mono">
+                {Math.round(ev.total_mm)}
+                <small> mm</small>
+              </b>
+            </div>
+            <div>
+              <span>Soil wetness</span>
+              <b className="mono">
+                {Math.round(ev.soil_wetness * 100)}
+                <small> %</small>
+              </b>
+            </div>
+            <div>
+              <span>ERA5 check</span>
+              <b className="mono">
+                {Math.round(ev.era5_mm)}
+                <small> mm</small>
+              </b>
+            </div>
+          </div>
+        ) : (
+          <p className="dock-desc">
+            {summary.rain.events_confirmed} storms ≥12 mm confirmed by two independent sources since{" "}
+            {fmtDay(summary.period.start)}.
+          </p>
+        )}
       </div>
-      {ev ? <div className="readouts">
-        <div><span>Rain (GPM)</span><b className="mono">{Math.round(ev.total_mm)}<small> mm</small></b></div>
-        <div><span>Soil wetness</span><b className="mono">{Math.round(ev.soil_wetness * 100)}<small> %</small></b></div>
-        <div><span>ERA5 check</span><b className="mono">{Math.round(ev.era5_mm)}<small> mm</small></b></div>
-      </div> : <p className="dock-desc">{summary.rain.events_confirmed} storms ≥12 mm confirmed by two independent sources since {fmtDay(summary.period.start)}.</p>}
-    </div>
-    <div className="dock-section">
-      <h3 className="eyebrow">Layers</h3>
-      <Toggle on={layers.extent} onChange={set('extent')} icon={Droplets} label="Flood depth" hint="model output · 28 m" />
-      <Toggle on={layers.depth3d} onChange={set('depth3d')} icon={Box} label="Water volume" hint="3D at problem spots · ×20" />
-      <Toggle on={layers.flow} onChange={set('flow')} icon={Navigation} label="River network" hint="computed from terrain" />
-      <Toggle on={layers.hotspots} onChange={set('hotspots')} icon={CircleAlert} label="Problem spots" />
-      <Toggle on={layers.lidar} onChange={set('lidar')} icon={ScanLine} label="ICESat-2 lidar" hint="NASA ground tracks" />
-      <Toggle on={layers.buildings} onChange={set('buildings')} icon={Building2} label="3D buildings" hint="OSM heights" />
-      <Toggle on={layers.terrain} onChange={set('terrain')} icon={Mountain} label="Terrain relief" hint="SRTM ×1.6" />
-    </div>
-    <div className="dock-section legend">
-      <h3 className="eyebrow">Water depth</h3>
-      <div className="depth-ramp"><i style={{ background: '#1F5F8B' }} /><i style={{ background: '#2E8FD0' }} /><i style={{ background: '#7CCBFF' }} /></div>
-      <div className="depth-labels"><span>0.1–0.3 m</span><span>0.3–1 m</span><span>&gt; 1 m</span></div>
-      {layers.lidar && <div className="drain-legend"><span><i className="lidar-dot" />ICESat-2 ground point (2021–2026)</span></div>}
-    </div>
-  </aside>;
+      <div className="dock-section">
+        <h3 className="eyebrow">Layers</h3>
+        <Toggle
+          on={layers.extent}
+          onChange={set("extent")}
+          icon={Droplets}
+          label="Flood depth"
+          hint="model output · 28 m"
+        />
+        <Toggle
+          on={layers.depth3d}
+          onChange={set("depth3d")}
+          icon={Box}
+          label="Water volume"
+          hint="3D at problem spots · ×20"
+        />
+        <Toggle
+          on={layers.flow}
+          onChange={set("flow")}
+          icon={Navigation}
+          label="River network"
+          hint="computed from terrain"
+        />
+        <Toggle
+          on={layers.hotspots}
+          onChange={set("hotspots")}
+          icon={CircleAlert}
+          label="Problem spots"
+        />
+        <Toggle
+          on={layers.lidar}
+          onChange={set("lidar")}
+          icon={ScanLine}
+          label="ICESat-2 lidar"
+          hint="NASA ground tracks"
+        />
+        <Toggle
+          on={layers.buildings}
+          onChange={set("buildings")}
+          icon={Building2}
+          label="3D buildings"
+          hint="OSM heights"
+        />
+        <Toggle
+          on={layers.terrain}
+          onChange={set("terrain")}
+          icon={Mountain}
+          label="Terrain relief"
+          hint="SRTM ×1.6"
+        />
+      </div>
+      <div className="dock-section legend">
+        <h3 className="eyebrow">Water depth</h3>
+        <div className="depth-ramp">
+          <i style={{ background: "#1F5F8B" }} />
+          <i style={{ background: "#2E8FD0" }} />
+          <i style={{ background: "#7CCBFF" }} />
+        </div>
+        <div className="depth-labels">
+          <span>0.1–0.3 m</span>
+          <span>0.3–1 m</span>
+          <span>&gt; 1 m</span>
+        </div>
+        {layers.lidar && (
+          <div className="drain-legend">
+            <span>
+              <i className="lidar-dot" />
+              ICESat-2 ground point (2021–2026)
+            </span>
+          </div>
+        )}
+      </div>
+    </aside>
+  );
 }
 
 /* ───────────── right panel ───────────── */
 function HotspotDetail({ h, close }) {
-  return <div className="detail">
-    <div className="detail-head">
-      <div><span className="eyebrow">{h.id} · {h.district}</span><h3>{h.name}</h3></div>
-      <button className="icon-btn" onClick={close} aria-label="Close detail"><X size={16} /></button>
+  return (
+    <div className="detail">
+      <div className="detail-head">
+        <div>
+          <span className="eyebrow">
+            {h.id} · {h.district}
+          </span>
+          <h3>{h.name}</h3>
+        </div>
+        <button className="icon-btn" onClick={close} aria-label="Close detail">
+          <X size={16} />
+        </button>
+      </div>
+      <div className="badge-row">
+        <RiskBadge score={h.score} />
+        <span className="cause-tag">{CAUSE[h.cause]}</span>
+      </div>
+      <div className="detail-grid">
+        <div>
+          <span>Max depth</span>
+          <b className="mono">{h.depth.toFixed(2)} m</b>
+        </div>
+        <div>
+          <span>Flooded in</span>
+          <b className="mono">
+            {h.events} of {h.events_total}
+          </b>
+          <small>storms ≥30 cm</small>
+        </div>
+        <div>
+          <span>Time above flood level</span>
+          <b className="mono">~{h.duration_h} h</b>
+          <small>model estimate</small>
+        </div>
+        <div>
+          <span>Built-up area hit</span>
+          <b className="mono">{(h.built_m2 / 1e4).toFixed(1)} ha</b>
+        </div>
+      </div>
+      <div className="detail-block">
+        <span className="eyebrow">Storm dates that flooded it</span>
+        <div className="date-chips">
+          {h.recent_dates.map((d) => (
+            <span key={d} className={d === h.worst_event ? "is-worst" : ""}>
+              {fmtDay(d)}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="detail-block">
+        <span className="eyebrow">Why</span>
+        <p>
+          {h.cause === "river"
+            ? `Water rises out of the channel here: ${h.upstream_km2.toFixed(0)} km² of catchment drains through this point.`
+            : `A low point in the terrain collecting runoff from ${h.upstream_km2.toFixed(1)} km².`}
+        </p>
+      </div>
+      <div className="detail-block fix">
+        <span className="eyebrow">
+          <Wrench size={11} /> Suggested action
+        </span>
+        <p>{h.fix}</p>
+      </div>
     </div>
-    <div className="badge-row"><RiskBadge score={h.score} /><span className="cause-tag">{CAUSE[h.cause]}</span></div>
-    <div className="detail-grid">
-      <div><span>Max depth</span><b className="mono">{h.depth.toFixed(2)} m</b></div>
-      <div><span>Flooded in</span><b className="mono">{h.events} of {h.events_total}</b><small>storms ≥30 cm</small></div>
-      <div><span>Time above flood level</span><b className="mono">~{h.duration_h} h</b><small>model estimate</small></div>
-      <div><span>Built-up area hit</span><b className="mono">{(h.built_m2 / 1e4).toFixed(1)} ha</b></div>
-    </div>
-    <div className="detail-block"><span className="eyebrow">Storm dates that flooded it</span>
-      <div className="date-chips">{h.recent_dates.map(d => <span key={d} className={d === h.worst_event ? 'is-worst' : ''}>{fmtDay(d)}</span>)}</div>
-    </div>
-    <div className="detail-block"><span className="eyebrow">Why</span><p>{h.cause === 'river'
-      ? `Water rises out of the channel here: ${h.upstream_km2.toFixed(0)} km² of catchment drains through this point.`
-      : `A low point in the terrain collecting runoff from ${h.upstream_km2.toFixed(1)} km².`}</p></div>
-    <div className="detail-block fix"><span className="eyebrow"><Wrench size={11} /> Suggested action</span><p>{h.fix}</p></div>
-  </div>;
+  );
 }
 
 /* ───────────── Studena dam ───────────── */
-const fmtClock = (t) => { const s = Math.max(0, Math.round(t)); return `T+${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+const fmtClock = (t) => {
+  const s = Math.max(0, Math.round(t));
+  return `T+${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+};
 
 function FillChart({ levels, official = [], current }) {
-  const W = 300, H = 64, n = levels.length;
-  const t0 = new Date(levels[0].date).getTime(), t1 = new Date(levels[n - 1].date).getTime();
+  const W = 300,
+    H = 64,
+    n = levels.length;
+  const t0 = new Date(levels[0].date).getTime(),
+    t1 = new Date(levels[n - 1].date).getTime();
   const x = (d) => ((new Date(d).getTime() - t0) / (t1 - t0)) * W;
   const y = (f) => H - 4 - (Math.min(100, f) / 100) * (H - 10);
-  const line = levels.map((l, i) => `${i ? 'L' : 'M'}${x(l.date).toFixed(1)} ${y(l.fill_pct).toFixed(1)}`).join(' ');
+  const line = levels
+    .map((l, i) => `${i ? "L" : "M"}${x(l.date).toFixed(1)} ${y(l.fill_pct).toFixed(1)}`)
+    .join(" ");
   const [hover, setHover] = useState(null);
   const onMove = (e) => {
-    const r = e.currentTarget.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width * W;
-    let best = levels[0]; for (const l of levels) if (Math.abs(x(l.date) - fx) < Math.abs(x(best.date) - fx)) best = l;
+    const r = e.currentTarget.getBoundingClientRect(),
+      fx = ((e.clientX - r.left) / r.width) * W;
+    let best = levels[0];
+    for (const l of levels) if (Math.abs(x(l.date) - fx) < Math.abs(x(best.date) - fx)) best = l;
     setHover(best);
   };
   const show = hover ?? current;
-  return <div className="fill-chart">
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" onMouseMove={onMove} onMouseLeave={() => setHover(null)} role="img" aria-label="Reservoir fill over five years">
-      <line x1="0" x2={W} y1={y(100)} y2={y(100)} className="fc-grid" />
-      <line x1="0" x2={W} y1={y(50)} y2={y(50)} className="fc-grid" />
-      <path d={`${line} L${W} ${H} L0 ${H} Z`} className="fc-area" />
-      <path d={line} className="fc-line" vectorEffect="non-scaling-stroke" />
-      {show && <line x1={x(show.date)} x2={x(show.date)} y1="0" y2={H} className="fc-cursor" vectorEffect="non-scaling-stroke" />}
-    </svg>
-    {official.filter(o => o.date >= levels[0].date && o.date <= levels[n - 1].date).map(o => <span key={o.date} className="fc-dot" style={{ left: `${(x(o.date) / W) * 100}%`, top: `${y(o.fill_pct)}px` }} title={`МОСВ ${fmtDay(o.date)}: ${o.volume_mm3} Mm³ (${Math.round(o.fill_pct)}%)`} />)}
-    {show && <div className="fc-tip" style={{ left: `${(x(show.date) / W) * 100}%` }}>{fmtDay(show.date)} · <b>{Math.round(show.fill_pct)}%</b></div>}
-    <div className="fc-axis"><span>{levels[0].date.slice(0, 4)}</span><span>100% = 25.2 Mm³</span><span>{levels[n - 1].date.slice(0, 4)}</span></div>
-    <div className="fc-legend"><span><i className="lg-line" />Sentinel-2 (calibrated)</span>{official.length > 0 && <span><i className="lg-dot" />МОСВ official</span>}</div>
-  </div>;
+  return (
+    <div className="fill-chart">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        onMouseMove={onMove}
+        onMouseLeave={() => setHover(null)}
+        role="img"
+        aria-label="Reservoir fill over five years"
+      >
+        <line x1="0" x2={W} y1={y(100)} y2={y(100)} className="fc-grid" />
+        <line x1="0" x2={W} y1={y(50)} y2={y(50)} className="fc-grid" />
+        <path d={`${line} L${W} ${H} L0 ${H} Z`} className="fc-area" />
+        <path d={line} className="fc-line" vectorEffect="non-scaling-stroke" />
+        {show && (
+          <line
+            x1={x(show.date)}
+            x2={x(show.date)}
+            y1="0"
+            y2={H}
+            className="fc-cursor"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+      </svg>
+      {official
+        .filter((o) => o.date >= levels[0].date && o.date <= levels[n - 1].date)
+        .map((o) => (
+          <span
+            key={o.date}
+            className="fc-dot"
+            style={{ left: `${(x(o.date) / W) * 100}%`, top: `${y(o.fill_pct)}px` }}
+            title={`МОСВ ${fmtDay(o.date)}: ${o.volume_mm3} Mm³ (${Math.round(o.fill_pct)}%)`}
+          />
+        ))}
+      {show && (
+        <div className="fc-tip" style={{ left: `${(x(show.date) / W) * 100}%` }}>
+          {fmtDay(show.date)} · <b>{Math.round(show.fill_pct)}%</b>
+        </div>
+      )}
+      <div className="fc-axis">
+        <span>{levels[0].date.slice(0, 4)}</span>
+        <span>100% = 25.2 Mm³</span>
+        <span>{levels[n - 1].date.slice(0, 4)}</span>
+      </div>
+      <div className="fc-legend">
+        <span>
+          <i className="lg-line" />
+          Sentinel-2 (calibrated)
+        </span>
+        {official.length > 0 && (
+          <span>
+            <i className="lg-dot" />
+            МОСВ official
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function DamPanel({ dam, level, periodLabel, mode, setMode, onSimulate, simActive, close }) {
   const d = dam.dam;
-  return <div className="detail dam-detail">
-    <div className="detail-head">
-      <div><span className="eyebrow">{d.name_bg} · {d.river} · since {d.in_service}</span><h3>Studena Dam</h3></div>
-      <button className="icon-btn" onClick={close} aria-label="Close"><X size={16} /></button>
-    </div>
-    <p className="dam-sub">Drinking water for Pernik. Pernik lies {Math.round(Math.hypot((d.coord[0] - dam.pernik.coord[0]) * 82, (d.coord[1] - dam.pernik.coord[1]) * 111))} km downstream on the Struma.</p>
-    <div className="detail-grid">
-      <div><span>Wall height</span><b className="mono">{d.height_m} m</b></div>
-      <div><span>Capacity</span><b className="mono">{d.capacity_mm3} Mm³</b></div>
-      <div><span>Crest (terrain)</span><b className="mono">{Math.round(d.crest_m)} m</b></div>
-      <div><span>Lake at full</span><b className="mono">{d.area_full_km2.toFixed(2)} km²</b></div>
-    </div>
-    <div className="detail-block">
-      <span className="eyebrow">Water in the lake · {periodLabel}</span>
-      <div className="fill-gauge"><i style={{ width: `${Math.min(100, level.fill_pct)}%` }} /><span className="mono">{Math.round(level.fill_pct)}%</span></div>
-      <div className="fill-reads"><span><b className="mono">{level.volume_mm3}</b> Mm³</span><span>level <b className="mono">{Math.round(level.level_m)}</b> m</span><span>Sentinel-2 · {fmtDay(level.date)}</span></div>
-      <FillChart levels={dam.levels} official={dam.official} current={level} />
-    </div>
-    <div className="detail-block">
-      <span className="eyebrow">Failure scenario</span>
-      <div className="seg seg-2">
-        <button className={mode === 'breach' ? 'is-on' : ''} onClick={() => setMode('breach')}>Breach</button>
-        <button className={mode === 'collapse' ? 'is-on' : ''} onClick={() => setMode('collapse')}>Total collapse</button>
+  return (
+    <div className="detail dam-detail">
+      <div className="detail-head">
+        <div>
+          <span className="eyebrow">
+            {d.name_bg} · {d.river} · since {d.in_service}
+          </span>
+          <h3>Studena Dam</h3>
+        </div>
+        <button className="icon-btn" onClick={close} aria-label="Close">
+          <X size={16} />
+        </button>
       </div>
-      <p className="dam-sub">{mode === 'breach'
-        ? `A ${d.breach_width_m} m gap opens over ${Math.round(d.breach_time_s / 60)} min (Froehlich 2008).`
-        : 'The whole wall fails within about a minute: worst case.'}</p>
+      <p className="dam-sub">
+        Drinking water for Pernik. Pernik lies{" "}
+        {Math.round(
+          Math.hypot(
+            (d.coord[0] - dam.pernik.coord[0]) * 82,
+            (d.coord[1] - dam.pernik.coord[1]) * 111,
+          ),
+        )}{" "}
+        km downstream on the Struma.
+      </p>
+      <div className="detail-grid">
+        <div>
+          <span>Wall height</span>
+          <b className="mono">{d.height_m} m</b>
+        </div>
+        <div>
+          <span>Capacity</span>
+          <b className="mono">{d.capacity_mm3} Mm³</b>
+        </div>
+        <div>
+          <span>Crest (terrain)</span>
+          <b className="mono">{Math.round(d.crest_m)} m</b>
+        </div>
+        <div>
+          <span>Lake at full</span>
+          <b className="mono">{d.area_full_km2.toFixed(2)} km²</b>
+        </div>
+      </div>
+      <div className="detail-block">
+        <span className="eyebrow">Water in the lake · {periodLabel}</span>
+        <div className="fill-gauge">
+          <i style={{ width: `${Math.min(100, level.fill_pct)}%` }} />
+          <span className="mono">{Math.round(level.fill_pct)}%</span>
+        </div>
+        <div className="fill-reads">
+          <span>
+            <b className="mono">{level.volume_mm3}</b> Mm³
+          </span>
+          <span>
+            level <b className="mono">{Math.round(level.level_m)}</b> m
+          </span>
+          <span>Sentinel-2 · {fmtDay(level.date)}</span>
+        </div>
+        <FillChart levels={dam.levels} official={dam.official} current={level} />
+      </div>
+      <div className="detail-block">
+        <span className="eyebrow">Failure scenario</span>
+        <div className="seg seg-2">
+          <button className={mode === "breach" ? "is-on" : ""} onClick={() => setMode("breach")}>
+            Breach
+          </button>
+          <button
+            className={mode === "collapse" ? "is-on" : ""}
+            onClick={() => setMode("collapse")}
+          >
+            Total collapse
+          </button>
+        </div>
+        <p className="dam-sub">
+          {mode === "breach"
+            ? `A ${d.breach_width_m} m gap opens over ${Math.round(d.breach_time_s / 60)} min (Froehlich 2008).`
+            : "The whole wall fails within about a minute: worst case."}
+        </p>
+      </div>
+      <button className="simulate-btn" onClick={onSimulate} disabled={simActive}>
+        <Zap size={17} /> {simActive ? "Simulation running" : "Simulate dam failure"}
+      </button>
+      <p className="dam-note">
+        <Info size={12} /> Hypothetical scenario for emergency planning. Not a prediction: the dam
+        is monitored and operated by ВиК Перник.
+      </p>
     </div>
-    <button className="simulate-btn" onClick={onSimulate} disabled={simActive}><Zap size={17} /> {simActive ? 'Simulation running' : 'Simulate dam failure'}</button>
-    <p className="dam-note"><Info size={12} /> Hypothetical scenario for emergency planning. Not a prediction: the dam is monitored and operated by ВиК Перник.</p>
-  </div>;
+  );
 }
 
 function DamHud({ stats, dam, speed, setSpeed, paused, setPaused, onStop }) {
   const d = dam.dam;
   const done = stats?.done;
-  return <section className="timeline glass dam-hud" aria-label="Dam failure simulation">
-    <div className="tl-head">
-      <button className="play danger" onClick={() => { if (paused) { playSim(); setPaused(false); } else { pauseSim(); setPaused(true); } }} aria-label={paused ? 'Resume' : 'Pause'} disabled={done}>{paused || done ? <Play size={16} /> : <Pause size={16} />}</button>
-      <div className="tl-clock"><span className="mono big">{fmtClock(stats?.t ?? 0)}</span><span className="tl-sub">{done ? 'Simulation finished · 3 h' : stats?.breachPct < 1 ? `Breach opening ${Math.round((stats?.breachPct ?? 0) * 100)}%` : 'Flood wave travelling down the Struma'}</span></div>
-      <div className="seg seg-3 speed">
-        {[60, 300, 900].map(v => <button key={v} className={speed === v ? 'is-on' : ''} onClick={() => { setSpeed(v); setSimSpeed(v); }}>×{v}</button>)}
+  return (
+    <section className="timeline glass dam-hud" aria-label="Dam failure simulation">
+      <div className="tl-head">
+        <button
+          className="play danger"
+          onClick={() => {
+            if (paused) {
+              playSim();
+              setPaused(false);
+            } else {
+              pauseSim();
+              setPaused(true);
+            }
+          }}
+          aria-label={paused ? "Resume" : "Pause"}
+          disabled={done}
+        >
+          {paused || done ? <Play size={16} /> : <Pause size={16} />}
+        </button>
+        <div className="tl-clock">
+          <span className="mono big">{fmtClock(stats?.t ?? 0)}</span>
+          <span className="tl-sub">
+            {done
+              ? "Simulation finished · 3 h"
+              : stats?.breachPct < 1
+                ? `Breach opening ${Math.round((stats?.breachPct ?? 0) * 100)}%`
+                : "Flood wave travelling down the Struma"}
+          </span>
+        </div>
+        <div className="seg seg-3 speed">
+          {[60, 300, 900].map((v) => (
+            <button
+              key={v}
+              className={speed === v ? "is-on" : ""}
+              onClick={() => {
+                setSpeed(v);
+                setSimSpeed(v);
+              }}
+            >
+              ×{v}
+            </button>
+          ))}
+        </div>
+        {done && (
+          <button className="ghost-btn small" onClick={showMaxExtent}>
+            <Maximize2 size={14} /> Max extent
+          </button>
+        )}
+        <button className="ghost-btn small" onClick={onStop}>
+          <Square size={13} /> Stop
+        </button>
       </div>
-      {done && <button className="ghost-btn small" onClick={showMaxExtent}><Maximize2 size={14} /> Max extent</button>}
-      <button className="ghost-btn small" onClick={onStop}><Square size={13} /> Stop</button>
-    </div>
-    <div className="sim-stats">
-      <div><span>Released</span><b className="mono">{(stats?.released ?? 0).toFixed(1)}<small> / {(stats?.V0 ?? 0).toFixed(1)} Mm³</small></b><i className="mini-bar"><i style={{ width: `${Math.min(100, ((stats?.released ?? 0) / Math.max(0.01, stats?.V0 ?? 1)) * 100)}%` }} /></i></div>
-      <div><span>Outflow now · peak</span><b className="mono">{Math.round(stats?.outflow ?? 0).toLocaleString('en')}<small> · {Math.round(stats?.peakQ ?? 0).toLocaleString('en')} m³/s</small></b><em>Froehlich est. {d.qp_froehlich_m3s.toLocaleString('en')}</em></div>
-      <div><span>Flooded land</span><b className="mono">{(stats?.area ?? 0).toFixed(2)}<small> km²</small></b><em>max {(stats?.peakArea ?? 0).toFixed(2)}</em></div>
-      <div><span>Built-up under water</span><b className="mono">{Math.round(stats?.built ?? 0)}<small> ha</small></b><em>&gt;30 cm · max {Math.round(stats?.peakBuilt ?? 0)}</em></div>
-      <div className={stats?.pernikAt != null ? 'alert' : ''}><span><Home size={11} /> Reaches Pernik</span><b className="mono">{stats?.pernikAt != null ? fmtClock(stats.pernikAt) : '—'}</b><em>{stats?.pernikAt != null ? 'built-up area >30 cm' : 'not yet'}</em></div>
-    </div>
-  </section>;
+      <div className="sim-stats">
+        <div>
+          <span>Released</span>
+          <b className="mono">
+            {(stats?.released ?? 0).toFixed(1)}
+            <small> / {(stats?.V0 ?? 0).toFixed(1)} Mm³</small>
+          </b>
+          <i className="mini-bar">
+            <i
+              style={{
+                width: `${Math.min(100, ((stats?.released ?? 0) / Math.max(0.01, stats?.V0 ?? 1)) * 100)}%`,
+              }}
+            />
+          </i>
+        </div>
+        <div>
+          <span>Outflow now · peak</span>
+          <b className="mono">
+            {Math.round(stats?.outflow ?? 0).toLocaleString("en")}
+            <small> · {Math.round(stats?.peakQ ?? 0).toLocaleString("en")} m³/s</small>
+          </b>
+          <em>Froehlich est. {d.qp_froehlich_m3s.toLocaleString("en")}</em>
+        </div>
+        <div>
+          <span>Flooded land</span>
+          <b className="mono">
+            {(stats?.area ?? 0).toFixed(2)}
+            <small> km²</small>
+          </b>
+          <em>max {(stats?.peakArea ?? 0).toFixed(2)}</em>
+        </div>
+        <div>
+          <span>Built-up under water</span>
+          <b className="mono">
+            {Math.round(stats?.built ?? 0)}
+            <small> ha</small>
+          </b>
+          <em>&gt;30 cm · max {Math.round(stats?.peakBuilt ?? 0)}</em>
+        </div>
+        <div className={stats?.pernikAt != null ? "alert" : ""}>
+          <span>
+            <Home size={11} /> Reaches Pernik
+          </span>
+          <b className="mono">{stats?.pernikAt != null ? fmtClock(stats.pernikAt) : "—"}</b>
+          <em>{stats?.pernikAt != null ? "built-up area >30 cm" : "not yet"}</em>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-function RiskPanel({ summary, hotspots, eventIdx, selection, setSelection, open, setOpen, damSlot }) {
-  const hs = selection?.kind === 'hotspot' ? hotspots.find(h => h.id === selection.id) : null;
+function RiskPanel({
+  summary,
+  hotspots,
+  eventIdx,
+  selection,
+  setSelection,
+  open,
+  setOpen,
+  damSlot,
+}) {
+  const hs = selection?.kind === "hotspot" ? hotspots.find((h) => h.id === selection.id) : null;
   const cur = eventIdx >= 0 ? summary.events[eventIdx] : summary.max5y;
-  return <aside className={`lens glass ${open ? 'is-open' : 'is-collapsed'}`} aria-label="Flood risk">
-    <button className="lens-collapse icon-btn" onClick={() => setOpen(o => !o)} aria-label={open ? 'Collapse panel' : 'Expand panel'}>{open ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}</button>
-    <div className="lens-scroll">
-      <div className="lens-title"><Waves size={18} /><div><h2>Flood risk</h2><span>{eventIdx >= 0 ? `Storm of ${fmtDay(cur.start)}` : 'Sofia · 5-year maximum'}</span></div></div>
-      {selection?.kind === 'dam' && damSlot}
-      {hs && <HotspotDetail h={hs} close={() => setSelection(null)} />}
-      <div className="kpi-row">
-        <Kpi label="Flooded area" value={cur.flooded_km2} unit="km²" note="depth ≥10 cm" />
-        <Kpi label="Built-up hit" value={ha(cur.built_flooded_km2)} unit="ha" note="ESA WorldCover" />
-        <Kpi label="Max depth" value={cur.max_depth_m.toFixed(1)} unit="m" note="model" />
+  return (
+    <aside className={`lens glass ${open ? "is-open" : "is-collapsed"}`} aria-label="Flood risk">
+      <button
+        className="lens-collapse icon-btn"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={open ? "Collapse panel" : "Expand panel"}
+      >
+        {open ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+      </button>
+      <div className="lens-scroll">
+        <div className="lens-title">
+          <Waves size={18} />
+          <div>
+            <h2>Flood risk</h2>
+            <span>
+              {eventIdx >= 0 ? `Storm of ${fmtDay(cur.start)}` : "Sofia · 5-year maximum"}
+            </span>
+          </div>
+        </div>
+        {selection?.kind === "dam" && damSlot}
+        {hs && <HotspotDetail h={hs} close={() => setSelection(null)} />}
+        <div className="kpi-row">
+          <Kpi label="Flooded area" value={cur.flooded_km2} unit="km²" note="depth ≥10 cm" />
+          <Kpi
+            label="Built-up hit"
+            value={ha(cur.built_flooded_km2)}
+            unit="ha"
+            note="ESA WorldCover"
+          />
+          <Kpi label="Max depth" value={cur.max_depth_m.toFixed(1)} unit="m" note="model" />
+        </div>
+        <div className="list-head">
+          <h4>Problem spots</h4>
+          <span>5 years · {hotspots[0]?.events_total} storms</span>
+        </div>
+        <ol className="fix-list">
+          {hotspots.map((h, i) => (
+            <li key={h.id}>
+              <button onClick={() => setSelection({ kind: "hotspot", id: h.id })}>
+                <span className="fix-rank mono">{String(i + 1).padStart(2, "0")}</span>
+                <span className="fix-body">
+                  <strong>{h.name}</strong>
+                  <small>
+                    {h.district} · {h.depth.toFixed(2)} m · {h.events}× flooded
+                  </small>
+                </span>
+                <RiskBadge score={h.score} />
+              </button>
+            </li>
+          ))}
+        </ol>
       </div>
-      <div className="list-head"><h4>Problem spots</h4><span>5 years · {hotspots[0]?.events_total} storms</span></div>
-      <ol className="fix-list">
-        {hotspots.map((h, i) => <li key={h.id}><button onClick={() => setSelection({ kind: 'hotspot', id: h.id })}>
-          <span className="fix-rank mono">{String(i + 1).padStart(2, '0')}</span>
-          <span className="fix-body"><strong>{h.name}</strong><small>{h.district} · {h.depth.toFixed(2)} m · {h.events}× flooded</small></span>
-          <RiskBadge score={h.score} />
-        </button></li>)}
-      </ol>
-    </div>
-  </aside>;
+    </aside>
+  );
 }
 
 /* ───────────── top bar ───────────── */
 function MapTopBar({ hotspots, onSearchPick, toggleDock, toggleLens, onDam, damReady }) {
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState("");
   const [focus, setFocus] = useState(false);
-  const results = q ? hotspots.filter(h => (h.name + h.district).toLowerCase().includes(q.toLowerCase())).slice(0, 6) : hotspots.slice(0, 5);
-  return <header className="topbar">
-    <div className="brand glass">
-      <span className="brand-mark"><Waves size={16} strokeWidth={2.6} /></span>
-      <span className="brand-text"><strong>FloodNerve</strong><small><MapPin size={10} /> {CITY.label}, BG</small></span>
-    </div>
-    <div className={`search glass ${focus ? 'is-focus' : ''}`}>
-      <Search size={15} />
-      <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)} placeholder="Search street or district" aria-label="Search" />
-      {focus && <div className="search-pop">
-        <span className="eyebrow">{q ? 'Matches' : 'Top problem spots'}</span>
-        {results.map(h => <button key={h.id} onMouseDown={() => { onSearchPick(h.id); setQ(''); }}>
-          <span className={`dot d-${riskLevel(h.score)}`} /><span><strong>{h.name}</strong><small>{h.district}</small></span><ArrowUpRight size={13} />
-        </button>)}
-        {!results.length && <p className="muted">No problem spot matches.</p>}
-      </div>}
-    </div>
-    {damReady && <button className="ghost-btn glass dam-jump" onClick={onDam}><Zap size={15} /><span>Pernik · Studena dam</span></button>}
-    <div className="top-actions">
-      <button className="ghost-btn glass mobile-only" onClick={toggleDock}><SlidersHorizontal size={15} /><span>Storms</span></button>
-      <button className="ghost-btn glass mobile-only" onClick={toggleLens}><PanelRightOpen size={15} /><span>Risk</span></button>
-    </div>
-  </header>;
+  const results = q
+    ? hotspots
+        .filter((h) => (h.name + h.district).toLowerCase().includes(q.toLowerCase()))
+        .slice(0, 6)
+    : hotspots.slice(0, 5);
+  return (
+    <header className="topbar">
+      <div className="brand glass">
+        <span className="brand-mark">
+          <Waves size={16} strokeWidth={2.6} />
+        </span>
+        <span className="brand-text">
+          <strong>FloodNerve</strong>
+          <small>
+            <MapPin size={10} /> {CITY.label}, BG
+          </small>
+        </span>
+      </div>
+      <div className={`search glass ${focus ? "is-focus" : ""}`}>
+        <Search size={15} />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onFocus={() => setFocus(true)}
+          onBlur={() => setTimeout(() => setFocus(false), 150)}
+          placeholder="Search street or district"
+          aria-label="Search"
+        />
+        {focus && (
+          <div className="search-pop">
+            <span className="eyebrow">{q ? "Matches" : "Top problem spots"}</span>
+            {results.map((h) => (
+              <button
+                key={h.id}
+                onMouseDown={() => {
+                  onSearchPick(h.id);
+                  setQ("");
+                }}
+              >
+                <span className={`dot d-${riskLevel(h.score)}`} />
+                <span>
+                  <strong>{h.name}</strong>
+                  <small>{h.district}</small>
+                </span>
+                <ArrowUpRight size={13} />
+              </button>
+            ))}
+            {!results.length && <p className="muted">No problem spot matches.</p>}
+          </div>
+        )}
+      </div>
+      {damReady && (
+        <button className="ghost-btn glass dam-jump" onClick={onDam}>
+          <Zap size={15} />
+          <span>Pernik · Studena dam</span>
+        </button>
+      )}
+      <div className="top-actions">
+        <button className="ghost-btn glass mobile-only" onClick={toggleDock}>
+          <SlidersHorizontal size={15} />
+          <span>Storms</span>
+        </button>
+        <button className="ghost-btn glass mobile-only" onClick={toggleLens}>
+          <PanelRightOpen size={15} />
+          <span>Risk</span>
+        </button>
+      </div>
+    </header>
+  );
 }
 
 function CameraControls({ map }) {
   const [is3d, set3d] = useState(true);
   if (!map) return null;
-  return <div className="camera glass" aria-label="Camera">
-    <button onClick={() => map.zoomIn()} aria-label="Zoom in"><Plus size={16} /></button>
-    <button onClick={() => map.zoomOut()} aria-label="Zoom out"><Minus size={16} /></button>
-    <button onClick={() => { const n = !is3d; set3d(n); map.easeTo({ pitch: n ? CITY.pitch : 0, duration: 900 }); }} aria-label="Toggle 3D" className="txt">{is3d ? '2D' : '3D'}</button>
-    <button onClick={() => { set3d(true); map.flyTo({ center: CITY.center, zoom: CITY.zoom, pitch: CITY.pitch, bearing: CITY.bearing, duration: 1600 }); }} aria-label="Reset view"><RotateCcw size={15} /></button>
-  </div>;
+  return (
+    <div className="camera glass" aria-label="Camera">
+      <button onClick={() => map.zoomIn()} aria-label="Zoom in">
+        <Plus size={16} />
+      </button>
+      <button onClick={() => map.zoomOut()} aria-label="Zoom out">
+        <Minus size={16} />
+      </button>
+      <button
+        onClick={() => {
+          const n = !is3d;
+          set3d(n);
+          map.easeTo({ pitch: n ? CITY.pitch : 0, duration: 900 });
+        }}
+        aria-label="Toggle 3D"
+        className="txt"
+      >
+        {is3d ? "2D" : "3D"}
+      </button>
+      <button
+        onClick={() => {
+          set3d(true);
+          map.flyTo({
+            center: CITY.center,
+            zoom: CITY.zoom,
+            pitch: CITY.pitch,
+            bearing: CITY.bearing,
+            duration: 1600,
+          });
+        }}
+        aria-label="Reset view"
+      >
+        <RotateCcw size={15} />
+      </button>
+    </div>
+  );
 }
 
 function DataState({ loading, error }) {
-  return <div className="data-state glass">
-    {loading ? <><Loader2 size={18} className="spin" /> Loading NASA-based model results…</>
-      : <><TriangleAlert size={18} /> Model results not found ({error}). Run the pipeline: <code>npm run data</code></>}
-  </div>;
+  return (
+    <div className="data-state glass">
+      {loading ? (
+        <>
+          <Loader2 size={18} className="spin" /> Loading NASA-based model results…
+        </>
+      ) : (
+        <>
+          <TriangleAlert size={18} /> Model results not found ({error}). Run the pipeline:{" "}
+          <code>npm run data</code>
+        </>
+      )}
+    </div>
+  );
 }
 
 /* ───────────── pages ───────────── */
@@ -367,186 +1059,497 @@ function MapPage({ data }) {
   const [map, setMap] = useState(null);
   const [dockOpen, setDockOpen] = useState(false);
   const [lensOpen, setLensOpen] = useState(() => window.innerWidth > 860);
-  const [layers, setLayers] = useState({ extent: true, depth3d: true, flow: true, hotspots: true, lidar: false, buildings: true, terrain: true });
+  const [layers, setLayers] = useState({
+    extent: true,
+    depth3d: true,
+    flow: true,
+    hotspots: true,
+    lidar: false,
+    buildings: true,
+    terrain: true,
+  });
   const [dam, setDam] = useState(null);
-  const [damMode, setDamMode] = useState('breach');
+  const [damMode, setDamMode] = useState("breach");
   const [simActive, setSimActive] = useState(false);
   const [simStats, setSimStats] = useState(null);
   const [simSpeed, setSimSpeedState] = useState(300);
   const [simPaused, setSimPaused] = useState(false);
 
-  useEffect(() => { loadDam().then(setDam).catch(() => setDam(null)); }, []);
+  useEffect(() => {
+    loadDam()
+      .then(setDam)
+      .catch(() => setDam(null));
+  }, []);
   useEffect(() => {
     let last = 0;
-    const off = onStats((st) => { const now = performance.now(); if (!st || st.done || now - last > 200) { last = now; setSimStats(st); } });
-    return () => { off(); stopSim(); };
+    const off = onStats((st) => {
+      const now = performance.now();
+      if (!st || st.done || now - last > 200) {
+        last = now;
+        setSimStats(st);
+      }
+    });
+    return () => {
+      off();
+      stopSim();
+    };
   }, []);
 
   const ev = summary && eventIdx >= 0 ? summary.events[eventIdx] : null;
   useEffect(() => {
     if (!ev) return;
-    setHour(ev.level.indexOf(Math.max(...ev.level)));   // open at the peak
+    setHour(ev.level.indexOf(Math.max(...ev.level))); // open at the peak
     setPlaying(false);
   }, [eventIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!playing || !ev) return;
-    const id = setInterval(() => setHour(h => (h >= ev.rain.length - 1 ? 0 : h + 1)), 180);
+    const id = setInterval(() => setHour((h) => (h >= ev.rain.length - 1 ? 0 : h + 1)), 180);
     return () => clearInterval(id);
   }, [playing, ev]);
 
   useEffect(() => {
     if (!map || !selection) return;
-    if (selection.kind === 'dam' && dam) {
-      map.flyTo({ center: dam.dam.coord, zoom: 14.2, pitch: 64, bearing: 130, duration: 2200, padding: { right: window.innerWidth > 900 ? 360 : 0 } });
+    if (selection.kind === "dam" && dam) {
+      map.flyTo({
+        center: dam.dam.coord,
+        zoom: 14.2,
+        pitch: 64,
+        bearing: 130,
+        duration: 2200,
+        padding: { right: window.innerWidth > 900 ? 360 : 0 },
+      });
       return;
     }
-    const item = hotspots.find(h => h.id === selection.id);
-    if (item) map.flyTo({ center: item.coord, zoom: 15.4, pitch: 62, bearing: map.getBearing() + 12, duration: 1800, padding: { right: window.innerWidth > 900 ? 360 : 0 } });
+    const item = hotspots.find((h) => h.id === selection.id);
+    if (item)
+      map.flyTo({
+        center: item.coord,
+        zoom: 15.4,
+        pitch: 62,
+        bearing: map.getBearing() + 12,
+        duration: 1800,
+        padding: { right: window.innerWidth > 900 ? 360 : 0 },
+      });
   }, [selection, map]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const factor = ev ? (ev.level[hour] ?? 0) : 1;
   const png = summary ? (ev ? ev.png : summary.max5y.png) : null;
 
   const damLevel = dam ? levelOn(ev ? ev.start : null) : null;
-  const periodLabel = ev ? `storm of ${fmtDay(ev.start)}` : 'highest in 5 years';
+  const periodLabel = ev ? `storm of ${fmtDay(ev.start)}` : "highest in 5 years";
   const runSim = () => {
     if (!dam || !damLevel) return;
-    setSimStats(null); setSimPaused(false); setSimActive(true); setPlaying(false);
+    setSimStats(null);
+    setSimPaused(false);
+    setSimActive(true);
+    setPlaying(false);
     startSim({ level: damLevel.level_m, mode: damMode, speed: simSpeed });
-    map?.flyTo({ center: [23.088, 42.568], zoom: 12.2, pitch: 56, bearing: -48, duration: 2600, padding: { right: window.innerWidth > 900 ? 360 : 0, bottom: 170, top: 60 } });
+    map?.flyTo({
+      center: [23.088, 42.568],
+      zoom: 12.2,
+      pitch: 56,
+      bearing: -48,
+      duration: 2600,
+      padding: { right: window.innerWidth > 900 ? 360 : 0, bottom: 170, top: 60 },
+    });
   };
-  const endSim = () => { stopSim(); setSimActive(false); setSimStats(null); };
-  const damSlot = dam && damLevel ? <DamPanel dam={dam} level={damLevel} periodLabel={periodLabel} mode={damMode} setMode={setDamMode} onSimulate={runSim} simActive={simActive} close={() => setSelection(null)} /> : null;
+  const endSim = () => {
+    stopSim();
+    setSimActive(false);
+    setSimStats(null);
+  };
+  const damSlot =
+    dam && damLevel ? (
+      <DamPanel
+        dam={dam}
+        level={damLevel}
+        periodLabel={periodLabel}
+        mode={damMode}
+        setMode={setDamMode}
+        onSimulate={runSim}
+        simActive={simActive}
+        close={() => setSelection(null)}
+      />
+    ) : null;
 
-  return <div className="map-page">
-    <FloodMap summary={summary} hotspots={hotspots} png={png} factor={factor} layers={layers} selectedId={selection?.id} onSelect={setSelection} onReady={setMap} dam={dam} damFill={damLevel?.fill_pct} damActive={simActive} />
-    <div className="map-vignette" aria-hidden="true" />
-    <MapTopBar hotspots={hotspots} onSearchPick={id => setSelection({ kind: 'hotspot', id })} toggleDock={() => setDockOpen(o => !o)} toggleLens={() => setLensOpen(o => !o)} damReady={!!dam} onDam={() => { setSelection({ kind: 'dam', id: 'dam' }); setLensOpen(true); }} />
-    {summary ? <>
-      <StormDock summary={summary} eventIdx={eventIdx} setEventIdx={setEventIdx} layers={layers} setLayers={setLayers} open={dockOpen} close={() => setDockOpen(false)} />
-      <RiskPanel summary={summary} hotspots={hotspots} eventIdx={eventIdx} selection={selection} setSelection={setSelection} open={lensOpen} setOpen={setLensOpen} damSlot={damSlot} />
-      <CameraControls map={map} />
-      {simActive && dam ? <DamHud stats={simStats} dam={dam} speed={simSpeed} setSpeed={setSimSpeedState} paused={simPaused} setPaused={setSimPaused} onStop={endSim} />
-        : ev ? <EventTimeline ev={ev} hour={hour} setHour={setHour} playing={playing} setPlaying={setPlaying} />
-        : <RecordTimeline summary={summary} onPick={setEventIdx} />}
-      <div className="demo-chip"><Check size={12} /> NASA GPM IMERG · MERRA-2 · ICESat-2 · SRTM — screening model</div>
-    </> : <DataState loading={data.loading} error={data.error} />}
-  </div>;
+  return (
+    <div className="map-page">
+      <FloodMap
+        summary={summary}
+        hotspots={hotspots}
+        png={png}
+        factor={factor}
+        layers={layers}
+        selectedId={selection?.id}
+        onSelect={setSelection}
+        onReady={setMap}
+        dam={dam}
+        damFill={damLevel?.fill_pct}
+        damActive={simActive}
+      />
+      <div className="map-vignette" aria-hidden="true" />
+      <MapTopBar
+        hotspots={hotspots}
+        onSearchPick={(id) => setSelection({ kind: "hotspot", id })}
+        toggleDock={() => setDockOpen((o) => !o)}
+        toggleLens={() => setLensOpen((o) => !o)}
+        damReady={!!dam}
+        onDam={() => {
+          setSelection({ kind: "dam", id: "dam" });
+          setLensOpen(true);
+        }}
+      />
+      {summary ? (
+        <>
+          <StormDock
+            summary={summary}
+            eventIdx={eventIdx}
+            setEventIdx={setEventIdx}
+            layers={layers}
+            setLayers={setLayers}
+            open={dockOpen}
+            close={() => setDockOpen(false)}
+          />
+          <RiskPanel
+            summary={summary}
+            hotspots={hotspots}
+            eventIdx={eventIdx}
+            selection={selection}
+            setSelection={setSelection}
+            open={lensOpen}
+            setOpen={setLensOpen}
+            damSlot={damSlot}
+          />
+          <CameraControls map={map} />
+          {simActive && dam ? (
+            <DamHud
+              stats={simStats}
+              dam={dam}
+              speed={simSpeed}
+              setSpeed={setSimSpeedState}
+              paused={simPaused}
+              setPaused={setSimPaused}
+              onStop={endSim}
+            />
+          ) : ev ? (
+            <EventTimeline
+              ev={ev}
+              hour={hour}
+              setHour={setHour}
+              playing={playing}
+              setPlaying={setPlaying}
+            />
+          ) : (
+            <RecordTimeline summary={summary} onPick={setEventIdx} />
+          )}
+          <div className="demo-chip">
+            <Check size={12} /> NASA GPM IMERG · MERRA-2 · ICESat-2 · SRTM — screening model
+          </div>
+        </>
+      ) : (
+        <DataState loading={data.loading} error={data.error} />
+      )}
+    </div>
+  );
 }
 
 function RegisterPage({ data }) {
   const { summary, hotspots } = data;
-  const [filter, setFilter] = useState('all');
-  if (!summary) return <div className="page"><DataState loading={data.loading} error={data.error} /></div>;
-  const rows = hotspots.filter(h => filter === 'all' || riskLevel(h.score) === filter);
-  const levels = ['critical', 'high', 'moderate', 'low'].filter(l => hotspots.some(h => riskLevel(h.score) === l));
-  return <div className="page">
-    <header className="page-head">
-      <span className="eyebrow">Sofia · {fmtDay(summary.period.start)} – {fmtDay(summary.period.end)}</span>
-      <h1>Risk register</h1>
-      <p>Built-up places where the model, driven by {summary.rain.events_confirmed} real storms from NASA satellite rainfall, puts at least 30 cm of water. Ranked by depth, how often it happens and how much built-up land is hit.</p>
-    </header>
-    <div className="page-kpis">
-      <Kpi label="Problem spots" value={hotspots.length} />
-      <Kpi label="Storms analysed" value={summary.rain.events_confirmed} note={`of ${summary.rain.events_found} found`} />
-      <Kpi label="Max flooded area" value={summary.max5y.flooded_km2} unit="km²" />
-      <Kpi label="Built-up hit (max)" value={ha(summary.max5y.built_flooded_km2)} unit="ha" />
+  const [filter, setFilter] = useState("all");
+  if (!summary)
+    return (
+      <div className="page">
+        <DataState loading={data.loading} error={data.error} />
+      </div>
+    );
+  const rows = hotspots.filter((h) => filter === "all" || riskLevel(h.score) === filter);
+  const levels = ["critical", "high", "moderate", "low"].filter((l) =>
+    hotspots.some((h) => riskLevel(h.score) === l),
+  );
+  return (
+    <div className="page">
+      <header className="page-head">
+        <span className="eyebrow">
+          Sofia · {fmtDay(summary.period.start)} – {fmtDay(summary.period.end)}
+        </span>
+        <h1>Risk register</h1>
+        <p>
+          Built-up places where the model, driven by {summary.rain.events_confirmed} real storms
+          from NASA satellite rainfall, puts at least 30 cm of water. Ranked by depth, how often it
+          happens and how much built-up land is hit.
+        </p>
+      </header>
+      <div className="page-kpis">
+        <Kpi label="Problem spots" value={hotspots.length} />
+        <Kpi
+          label="Storms analysed"
+          value={summary.rain.events_confirmed}
+          note={`of ${summary.rain.events_found} found`}
+        />
+        <Kpi label="Max flooded area" value={summary.max5y.flooded_km2} unit="km²" />
+        <Kpi label="Built-up hit (max)" value={ha(summary.max5y.built_flooded_km2)} unit="ha" />
+      </div>
+      <div className="filters">
+        {["all", ...levels].map((f) => (
+          <button key={f} className={filter === f ? "is-on" : ""} onClick={() => setFilter(f)}>
+            {f === "all" ? "All levels" : RISK[f].label}
+          </button>
+        ))}
+      </div>
+      <div className="table-wrap">
+        <table className="reg-table">
+          <thead>
+            <tr>
+              <th>Location</th>
+              <th>Risk</th>
+              <th>Cause</th>
+              <th className="num">Max depth</th>
+              <th className="num">Flooded</th>
+              <th className="num">Above flood level</th>
+              <th className="num">Built-up hit</th>
+              <th>Worst storm</th>
+              <th>Suggested action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((h) => (
+              <tr key={h.id}>
+                <td>
+                  <strong>{h.name}</strong>
+                  <small>
+                    {h.id} · {h.district}
+                  </small>
+                </td>
+                <td>
+                  <RiskBadge score={h.score} />
+                  <span className="score-bar">
+                    <i style={{ width: `${h.score}%` }} />
+                  </span>
+                </td>
+                <td>{CAUSE[h.cause]}</td>
+                <td className="num mono">{h.depth.toFixed(2)} m</td>
+                <td className="num mono">
+                  {h.events} / {h.events_total}
+                </td>
+                <td className="num mono">~{h.duration_h} h</td>
+                <td className="num mono">{(h.built_m2 / 1e4).toFixed(1)} ha</td>
+                <td className="mono">{fmtDay(h.worst_event)}</td>
+                <td className="fix-cell">{h.fix}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="foot-note">
+        <Info size={13} /> Screening model at 28 m resolution. Not an official flood map; channels,
+        culverts and sewers are not surveyed.
+      </p>
     </div>
-    <div className="filters">
-      {['all', ...levels].map(f => <button key={f} className={filter === f ? 'is-on' : ''} onClick={() => setFilter(f)}>{f === 'all' ? 'All levels' : RISK[f].label}</button>)}
-    </div>
-    <div className="table-wrap">
-      <table className="reg-table">
-        <thead><tr><th>Location</th><th>Risk</th><th>Cause</th><th className="num">Max depth</th><th className="num">Flooded</th><th className="num">Above flood level</th><th className="num">Built-up hit</th><th>Worst storm</th><th>Suggested action</th></tr></thead>
-        <tbody>
-          {rows.map(h => <tr key={h.id}>
-            <td><strong>{h.name}</strong><small>{h.id} · {h.district}</small></td>
-            <td><RiskBadge score={h.score} /><span className="score-bar"><i style={{ width: `${h.score}%` }} /></span></td>
-            <td>{CAUSE[h.cause]}</td>
-            <td className="num mono">{h.depth.toFixed(2)} m</td>
-            <td className="num mono">{h.events} / {h.events_total}</td>
-            <td className="num mono">~{h.duration_h} h</td>
-            <td className="num mono">{(h.built_m2 / 1e4).toFixed(1)} ha</td>
-            <td className="mono">{fmtDay(h.worst_event)}</td>
-            <td className="fix-cell">{h.fix}</td>
-          </tr>)}
-        </tbody>
-      </table>
-    </div>
-    <p className="foot-note"><Info size={13} /> Screening model at 28 m resolution. Not an official flood map; channels, culverts and sewers are not surveyed.</p>
-  </div>;
+  );
 }
 
 function SourcesPage({ data }) {
   const { summary } = data;
-  if (!summary) return <div className="page"><DataState loading={data.loading} error={data.error} /></div>;
-  const L = summary.lidar, Rn = summary.rain;
+  if (!summary)
+    return (
+      <div className="page">
+        <DataState loading={data.loading} error={data.error} />
+      </div>
+    );
+  const L = summary.lidar,
+    Rn = summary.rain;
   const sources = [
-    { kind: 'Lidar', name: 'ICESat-2 (ATL03 → ATL08 ground)', agency: 'NASA · via SlideRule', status: 'live',
-      role: `${L.segments_used.toLocaleString('en')} ground segments ${L.first} – ${L.last}. Terrain error ${L.rmse_before_m} → ${L.rmse_after_m} m after correction.`,
-      res: '40 m segments', cadence: '91-day repeat' },
-    { kind: 'Terrain', name: 'SRTM 1″', agency: 'NASA / NGA · AWS Terrain Tiles', status: 'live',
+    {
+      kind: "Lidar",
+      name: "ICESat-2 (ATL03 → ATL08 ground)",
+      agency: "NASA · via SlideRule",
+      status: "live",
+      role: `${L.segments_used.toLocaleString("en")} ground segments ${L.first} – ${L.last}. Terrain error ${L.rmse_before_m} → ${L.rmse_after_m} m after correction.`,
+      res: "40 m segments",
+      cadence: "91-day repeat",
+    },
+    {
+      kind: "Terrain",
+      name: "SRTM 1″",
+      agency: "NASA / NGA · AWS Terrain Tiles",
+      status: "live",
       role: `${summary.grid.rows}×${summary.grid.cols} cells, ${summary.dem.min_m}–${summary.dem.max_m} m. Roof bias ${L.built_bias_m} m, canopy bias ${L.tree_bias_m} m removed.`,
-      res: `${summary.grid.cell_m} m`, cadence: 'Static' },
-    { kind: 'Precipitation', name: 'GPM IMERG', agency: 'NASA / JAXA · via NASA POWER', status: 'live',
-      role: `Daily satellite rain, ${Rn.total_mm.toLocaleString('en')} mm in 5 years (${Rn.annual_mean_mm} mm/yr). Rain vs snow from IMERG liquid probability.`,
-      res: '0.1°', cadence: 'Daily' },
-    { kind: 'Reanalysis', name: 'MERRA-2', agency: 'NASA GMAO · via NASA POWER', status: 'live',
-      role: `${Rn.hours.toLocaleString('en')} hours: hourly rain pattern, surface soil wetness, temperature.`,
-      res: '0.5° × 0.625°', cadence: 'Hourly' },
-    { kind: 'Validation', name: 'ERA5', agency: 'ECMWF · via Open-Meteo', status: 'live',
-      role: `Independent check: ${Rn.events_confirmed} of ${Rn.events_found} storms confirmed.`, res: '0.25°', cadence: 'Hourly' },
-    { kind: 'Land cover', name: 'WorldCover 2021', agency: 'ESA · Sentinel-1/2', status: 'live',
-      role: `Built-up, vegetation and water at 10 m → runoff curve numbers. ${Math.round(summary.landcover.built_share * 100)}% of the area is built-up.`, res: '10 m', cadence: '2021' },
-    { kind: 'Reservoir', name: 'Sentinel-2 L2A · Studena', agency: 'ESA Copernicus · AWS Open Data', status: 'live',
-      role: 'Water surface of the Studena reservoir on every clear day 2022–2026 (NDWI), converted to volume and level.', res: '10 m', cadence: '~5 days' },
-    { kind: 'Official', name: 'МОСВ monthly bulletins', agency: 'Ministry of Environment and Water', status: 'live',
-      role: 'Official Studena volumes used to calibrate the satellite level (error ≈1.2 Mm³).', res: 'Reservoir', cadence: 'Monthly' },
-    { kind: 'Soil', name: 'SMAP L4', agency: 'NASA', status: 'login', role: 'Finer soil moisture (9 km, 3-hourly). Needs a free NASA Earthdata login.', res: '9 km', cadence: '3 h' },
-    { kind: 'Precipitation', name: 'GPM IMERG half-hourly', agency: 'NASA', status: 'login', role: 'Real 30-min storm intensities instead of daily totals. Needs Earthdata login.', res: '0.1°', cadence: '30 min' },
+      res: `${summary.grid.cell_m} m`,
+      cadence: "Static",
+    },
+    {
+      kind: "Precipitation",
+      name: "GPM IMERG",
+      agency: "NASA / JAXA · via NASA POWER",
+      status: "live",
+      role: `Daily satellite rain, ${Rn.total_mm.toLocaleString("en")} mm in 5 years (${Rn.annual_mean_mm} mm/yr). Rain vs snow from IMERG liquid probability.`,
+      res: "0.1°",
+      cadence: "Daily",
+    },
+    {
+      kind: "Reanalysis",
+      name: "MERRA-2",
+      agency: "NASA GMAO · via NASA POWER",
+      status: "live",
+      role: `${Rn.hours.toLocaleString("en")} hours: hourly rain pattern, surface soil wetness, temperature.`,
+      res: "0.5° × 0.625°",
+      cadence: "Hourly",
+    },
+    {
+      kind: "Validation",
+      name: "ERA5",
+      agency: "ECMWF · via Open-Meteo",
+      status: "live",
+      role: `Independent check: ${Rn.events_confirmed} of ${Rn.events_found} storms confirmed.`,
+      res: "0.25°",
+      cadence: "Hourly",
+    },
+    {
+      kind: "Land cover",
+      name: "WorldCover 2021",
+      agency: "ESA · Sentinel-1/2",
+      status: "live",
+      role: `Built-up, vegetation and water at 10 m → runoff curve numbers. ${Math.round(summary.landcover.built_share * 100)}% of the area is built-up.`,
+      res: "10 m",
+      cadence: "2021",
+    },
+    {
+      kind: "Reservoir",
+      name: "Sentinel-2 L2A · Studena",
+      agency: "ESA Copernicus · AWS Open Data",
+      status: "live",
+      role: "Water surface of the Studena reservoir on every clear day 2022–2026 (NDWI), converted to volume and level.",
+      res: "10 m",
+      cadence: "~5 days",
+    },
+    {
+      kind: "Official",
+      name: "МОСВ monthly bulletins",
+      agency: "Ministry of Environment and Water",
+      status: "live",
+      role: "Official Studena volumes used to calibrate the satellite level (error ≈1.2 Mm³).",
+      res: "Reservoir",
+      cadence: "Monthly",
+    },
+    {
+      kind: "Soil",
+      name: "SMAP L4",
+      agency: "NASA",
+      status: "login",
+      role: "Finer soil moisture (9 km, 3-hourly). Needs a free NASA Earthdata login.",
+      res: "9 km",
+      cadence: "3 h",
+    },
+    {
+      kind: "Precipitation",
+      name: "GPM IMERG half-hourly",
+      agency: "NASA",
+      status: "login",
+      role: "Real 30-min storm intensities instead of daily totals. Needs Earthdata login.",
+      res: "0.1°",
+      cadence: "30 min",
+    },
   ];
-  const statusLabel = { live: 'Connected', login: 'Needs login' };
-  return <div className="page">
-    <header className="page-head">
-      <span className="eyebrow">From orbit to street</span>
-      <h1>Data & model</h1>
-      <p>Every number on the map comes from this chain: NASA satellite rain and lidar, terrain and land cover, run through a transparent flood screening model for Sofia. Generated {fmtDay(summary.generated)}.</p>
-    </header>
-    <ol className="pipeline">
-      {PIPELINE.map(p => <li key={p.step}><span className="mono step">{p.step}</span><h3>{p.title}</h3><p>{p.text}</p></li>)}
-    </ol>
-    <div className="list-head wide"><h4>Inputs</h4><span>{sources.filter(s => s.status === 'live').length} connected · period {summary.period.start} → {summary.period.end}</span></div>
-    <div className="source-grid">
-      {sources.map(d => <article key={d.name} className="source-card">
-        <div className="source-top"><span className="source-kind">{d.kind}</span><span className={`st st-${d.status === 'live' ? 'live' : 'research'}`}>{statusLabel[d.status]}</span></div>
-        <h3>{d.name}</h3>
-        <span className="source-agency">{d.agency}</span>
-        <p>{d.role}</p>
-        <div className="source-meta"><span><b>Resolution</b>{d.res}</span><span><b>Cadence</b>{d.cadence}</span></div>
-      </article>)}
+  const statusLabel = { live: "Connected", login: "Needs login" };
+  return (
+    <div className="page">
+      <header className="page-head">
+        <span className="eyebrow">From orbit to street</span>
+        <h1>Data & model</h1>
+        <p>
+          Every number on the map comes from this chain: NASA satellite rain and lidar, terrain and
+          land cover, run through a transparent flood screening model for Sofia. Generated{" "}
+          {fmtDay(summary.generated)}.
+        </p>
+      </header>
+      <ol className="pipeline">
+        {PIPELINE.map((p) => (
+          <li key={p.step}>
+            <span className="mono step">{p.step}</span>
+            <h3>{p.title}</h3>
+            <p>{p.text}</p>
+          </li>
+        ))}
+      </ol>
+      <div className="list-head wide">
+        <h4>Inputs</h4>
+        <span>
+          {sources.filter((s) => s.status === "live").length} connected · period{" "}
+          {summary.period.start} → {summary.period.end}
+        </span>
+      </div>
+      <div className="source-grid">
+        {sources.map((d) => (
+          <article key={d.name} className="source-card">
+            <div className="source-top">
+              <span className="source-kind">{d.kind}</span>
+              <span className={`st st-${d.status === "live" ? "live" : "research"}`}>
+                {statusLabel[d.status]}
+              </span>
+            </div>
+            <h3>{d.name}</h3>
+            <span className="source-agency">{d.agency}</span>
+            <p>{d.role}</p>
+            <div className="source-meta">
+              <span>
+                <b>Resolution</b>
+                {d.res}
+              </span>
+              <span>
+                <b>Cadence</b>
+                {d.cadence}
+              </span>
+            </div>
+          </article>
+        ))}
+      </div>
+      <div className="list-head wide">
+        <h4>Limits — read before using</h4>
+        <span>screening, not engineering design</span>
+      </div>
+      <ul className="limits">
+        <li>
+          Terrain is 28 m: underpasses, curbs and culverts narrower than that are not visible to the
+          model.
+        </li>
+        <li>
+          Storm-sewer capacity is assumed ({summary.model.sewer_mm_h} mm/h over built-up catchments,{" "}
+          {summary.model.ditch_mm_h} mm/h elsewhere); Sofia's real network is not public.
+        </li>
+        <li>
+          Rain intensity within a day comes from MERRA-2's hourly pattern, so short cloudbursts are
+          smoothed and urban ponding is underestimated.
+        </li>
+        <li>
+          River channels are treated as natural; concrete channels of the Vladayska and Perlovska
+          carry more than the model assumes.
+        </li>
+        <li>
+          Low points are kept only if they persist in ≥
+          {Math.round(summary.model.depression_prob * 100)}% of {summary.model.realisations} terrain
+          realisations with ICESat-2-measured error ({L.rmse_after_m} m).
+        </li>
+      </ul>
     </div>
-    <div className="list-head wide"><h4>Limits — read before using</h4><span>screening, not engineering design</span></div>
-    <ul className="limits">
-      <li>Terrain is 28 m: underpasses, curbs and culverts narrower than that are not visible to the model.</li>
-      <li>Storm-sewer capacity is assumed ({summary.model.sewer_mm_h} mm/h over built-up catchments, {summary.model.ditch_mm_h} mm/h elsewhere); Sofia's real network is not public.</li>
-      <li>Rain intensity within a day comes from MERRA-2's hourly pattern, so short cloudbursts are smoothed and urban ponding is underestimated.</li>
-      <li>River channels are treated as natural; concrete channels of the Vladayska and Perlovska carry more than the model assumes.</li>
-      <li>Low points are kept only if they persist in ≥{Math.round(summary.model.depression_prob * 100)}% of {summary.model.realisations} terrain realisations with ICESat-2-measured error ({L.rmse_after_m} m).</li>
-    </ul>
-  </div>;
+  );
 }
 
 export default function App() {
-  const [page, setPage] = useState('map');
+  const [page, setPage] = useState("map");
   const data = useFloodData();
-  return <div className="shell">
-    <Rail page={page} setPage={setPage} />
-    <main className={`main main-${page}`}>
-      {page === 'map' && <MapPage data={data} />}
-      {page === 'register' && <RegisterPage data={data} />}
-      {page === 'sources' && <SourcesPage data={data} />}
-      {page.startsWith('l-') && <LegacyApp page={page.slice(2)} setPage={id => setPage('l-' + id)} />}
-    </main>
-  </div>;
+  return (
+    <div className="shell">
+      <Rail page={page} setPage={setPage} />
+      <main className={`main main-${page}`}>
+        {page === "map" && <MapPage data={data} />}
+        {page === "register" && <RegisterPage data={data} />}
+        {page === "sources" && <SourcesPage data={data} />}
+        {page === "l-heat" && <HeatPage />}
+        {page !== "l-heat" && page.startsWith("l-") && (
+          <LegacyApp page={page.slice(2)} setPage={(id) => setPage("l-" + id)} />
+        )}
+      </main>
+    </div>
+  );
 }
