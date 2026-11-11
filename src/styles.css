@@ -4419,7 +4419,8 @@ button {
 .heat-map-page .search.is-focus {
   border-color: rgba(255, 138, 61, 0.6);
 }
-.heat-map-page .fog-page-nav {
+.heat-map-page .fog-page-nav,
+.fog-map-page .fog-page-nav {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -4431,7 +4432,8 @@ button {
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(30px) saturate(180%);
 }
-.heat-map-page .fog-page-nav button {
+.heat-map-page .fog-page-nav button,
+.fog-map-page .fog-page-nav button {
   font-family: var(--sf);
   font-size: 12.5px;
   font-weight: 500;
@@ -4439,9 +4441,40 @@ button {
   padding: 8px 12px;
   color: var(--m-label-2);
 }
-.heat-map-page .fog-page-nav button:first-child {
+.heat-map-page .fog-page-nav button:first-child,
+.fog-map-page .fog-page-nav button:first-child {
   background: rgba(255, 255, 255, 0.16);
   color: var(--m-label);
+}
+.fog-map-page .fog-page-nav button:not(:first-child):hover {
+  background: transparent;
+  color: var(--m-label);
+}
+
+/* fog map · same Apple layer, slate accent */
+.fog-map-page {
+  --m-accent: #5E9CC0;
+  background: #101418;
+}
+.fog-map-page .brand-mark {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(160deg, #C9D6DE, #6F8C9D);
+}
+.fog-map-page .search.is-focus {
+  border-color: rgba(94, 156, 192, 0.6);
+}
+.fog-map-page .fog-ramp {
+  grid-template-columns: repeat(4, 1fr);
+}
+.fog-map-page .fog-probability-area {
+  fill: rgba(94, 156, 192, 0.18);
+}
+.fog-map-page .fog-probability-line {
+  stroke: var(--m-accent);
+}
+.fog-map-page .play:disabled {
+  opacity: 0.4;
 }
 .heat-map-page .storm-date small {
   display: block;

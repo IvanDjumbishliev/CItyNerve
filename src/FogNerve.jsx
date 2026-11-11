@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpRight, Building2, CarFront, Check, CircleAlert, CloudFog,
   Info, Loader2, MapPin, Mountain, PanelRightClose, PanelRightOpen, Play, Pause,
-  Search, TriangleAlert, Waves, Wind, X,
+  Search, TriangleAlert, Waves, Wind, X, Plus, Minus, RotateCcw, SlidersHorizontal,
 } from 'lucide-react';
 import FogMap from './FogMap.jsx';
 import { useFogData } from './useFogData.js';
@@ -20,13 +20,13 @@ const formatDate = (value) => value ? new Date(value).toLocaleDateString('en-GB'
 const formatDateTime = (value) => value ? new Date(value).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
 const visibility = (value) => value == null ? '—' : value < 1000 ? `${Math.round(value)} m` : `${(value / 1000).toFixed(1)} km`;
 
-function RiskBadge({ score }) {
-  return <span className={`risk-badge rb-${riskClass(score)}`}><CircleAlert size={12} />{RISK_NAME(score)}<b>{score}</b></span>;
+function RiskBadge({ score, showScore = true }) {
+  return <span className={`risk-badge rb-${riskClass(score)}`}><CircleAlert size={12} />{RISK_NAME(score)}{showScore && <b>{score}</b>}</span>;
 }
 
 function FogToggle({ on, onChange, icon: Icon, label, hint }) {
   return <button className={`toggle ${on ? 'is-on' : ''}`} onClick={() => onChange(!on)} role="switch" aria-checked={on}>
-    <Icon size={15} /><span className="toggle-text">{label}<small>{hint}</small></span><span className="switch"><i /></span>
+    <Icon size={15} /><span className="toggle-text">{label}{hint && <small>{hint}</small>}</span><span className="switch"><i /></span>
   </button>;
 }
 
@@ -54,19 +54,17 @@ function FogTimeline({ event, hour, setHour, playing, setPlaying, summary }) {
   return <section className="timeline glass fog-timeline" aria-label="Fog event hourly timeline">
     <div className="tl-head">
       <button className="play" onClick={() => setPlaying(value => !value)} disabled={!count} aria-label={playing ? 'Pause fog event' : 'Play fog event'}>
-        {playing ? <Pause size={16} /> : <Play size={16} />}
+        {playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}
       </button>
       <div className="tl-clock">
-        <span className="mono big">{event ? formatDateTime(current?.time ?? event.start) : 'Five-year record'}</span>
-        <span className="tl-sub">{event ? `${event.type} fog · observed ${visibility(current?.visibility_m)} · model ${visibility(current?.expected_visibility_m)}` : `${summary.station.fog_hours.toLocaleString('en')} observed fog hours`}</span>
+        <span className="big">{event ? formatDateTime(current?.time ?? event.start) : 'Five-year record'}</span>
+        <span className="tl-sub">{event ? `Visibility ${visibility(current?.visibility_m)}` : `${summary.station.fog_hours.toLocaleString('en')} fog hours`}</span>
       </div>
       <div className="tl-reads">
-        {current && <span><Wind size={13} /><b className="mono">{current.wind_ms} m/s</b> wind</span>}
-        {current && <span><CloudFog size={13} /><b className="mono">{Math.round((current.probability ?? 0) * 100)}%</b> model likelihood</span>}
+        {current && <span><b>{Math.round((current.probability ?? 0) * 100)}%</b> likelihood</span>}
       </div>
     </div>
     <div className="tl-chart">
-      <div className="tl-lane-labels"><span>Model probability</span><span>0–100%</span></div>
       <div className="tl-svg-wrap">
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
           <path d={area} className="fog-probability-area" />
@@ -76,7 +74,7 @@ function FogTimeline({ event, hour, setHour, playing, setPlaying, summary }) {
         {count > 1 && <input type="range" min="0" max={count - 1} step="1" value={hour} onChange={e => { setPlaying(false); setHour(Number(e.target.value)); }} aria-label="Scrub fog event hour" />}
         <div className="tl-ticks">{count > 1
           ? [0, Math.round((count - 1) / 2), count - 1].map(index => <span key={index}>{new Date(series[index].time).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })}</span>)
-          : <span>{event ? `${event.duration_h} hour observed episode` : 'Select a historical episode to play it'}</span>}</div>
+          : <span>{event ? `${event.duration_h} h episode` : 'Pick an episode to play it'}</span>}</div>
       </div>
     </div>
   </section>;
@@ -84,40 +82,34 @@ function FogTimeline({ event, hour, setHour, playing, setPlaying, summary }) {
 
 function FogDock({ events, selectedIndex, onSelect, layers, setLayers, open, onClose }) {
   const updateLayer = (key) => (value) => setLayers(current => ({ ...current, [key]: value }));
-  const selected = events[selectedIndex];
   return <aside className={`dock glass fog-dock ${open ? 'is-open' : ''}`} aria-label="Historical fog episodes and map layers">
     <button className="sheet-close icon-btn" onClick={onClose} aria-label="Close event panel"><X size={16} /></button>
     <div className="dock-section">
-      <h3 className="eyebrow">Observed fog episodes · last 5 years</h3>
+      <h3 className="dock-title">Fog episodes</h3>
       <div className="storm-list">
         {events.slice().reverse().map((event, reverseIndex) => {
           const index = events.length - reverseIndex - 1;
           return <button key={event.id} className={`storm ${selectedIndex === index ? 'is-on' : ''}`} onClick={() => onSelect(index)}>
-            <span className="storm-date">{formatDate(event.start)} <small>{event.type}</small></span>
+            <span className="storm-date">{formatDate(event.start)}</span>
             <span className="storm-meta mono">{visibility(event.minimum_visibility_m)}</span>
           </button>;
         })}
-        {!events.length && <p className="muted">No observed episodes in the downloaded station records.</p>}
+        {!events.length && <p className="muted">No episodes recorded.</p>}
       </div>
-      {selected && <div className="readouts fog-readouts">
-        <div><span>Duration</span><b className="mono">{selected.duration_h}<small> h</small></b></div>
-        <div><span>Min visibility</span><b className="mono">{visibility(selected.minimum_visibility_m)}</b></div>
-        <div><span>Fog type</span><b className="mono">{selected.type}</b></div>
-      </div>}
-      <p className="dock-desc">Episodes come from IEM METAR visibility &lt;1 km or FG/BR/FZFG codes. Historical station observations are not a forecast.</p>
     </div>
     <div className="dock-section">
-      <h3 className="eyebrow">Layers</h3>
-      <FogToggle on={layers.extent} onChange={updateLayer('extent')} icon={CloudFog} label="Fog density" hint="terrain-adjusted screen" />
-      <FogToggle on={layers.valley} onChange={updateLayer('valley')} icon={Mountain} label="Cold-air pool terrain" hint="SRTM topographic position" />
-      <FogToggle on={layers.hotspots} onChange={updateLayer('hotspots')} icon={CarFront} label="Fog hotspots" hint="OSM road exposure" />
-      <FogToggle on={layers.buildings} onChange={updateLayer('buildings')} icon={Building2} label="3D buildings" hint="OSM heights" />
-      <FogToggle on={layers.terrain} onChange={updateLayer('terrain')} icon={Mountain} label="Terrain relief" hint="SRTM ×1.6" />
+      <h3 className="dock-title">Layers</h3>
+      <div className="toggle-group">
+        <FogToggle on={layers.extent} onChange={updateLayer('extent')} icon={CloudFog} label="Fog density" />
+        <FogToggle on={layers.valley} onChange={updateLayer('valley')} icon={Mountain} label="Cold-air pools" />
+        <FogToggle on={layers.hotspots} onChange={updateLayer('hotspots')} icon={CarFront} label="Problem spots" />
+        <FogToggle on={layers.buildings} onChange={updateLayer('buildings')} icon={Building2} label="Buildings" />
+        <FogToggle on={layers.terrain} onChange={updateLayer('terrain')} icon={Mountain} label="Terrain" />
+      </div>
     </div>
-    <div className="dock-section legend fog-legend">
-      <h3 className="eyebrow">Expected visibility</h3>
-      {VISIBILITY_CLASSES.map(item => <div className="fog-class" key={item.label}><i style={{ background: item.colour }} /><span>{item.label}</span><small>{item.range}</small></div>)}
-      <p className="dock-desc">Overlay opacity represents model fog likelihood; it is not measured visibility in every grid cell.</p>
+    <div className="dock-section legend">
+      <div className="depth-ramp fog-ramp">{VISIBILITY_CLASSES.map(item => <i key={item.label} style={{ background: item.colour }} title={`${item.label} · ${item.range}`} />)}</div>
+      <div className="depth-labels"><span>Dense fog</span><span>Visibility</span><span>Clear</span></div>
     </div>
   </aside>;
 }
@@ -127,21 +119,20 @@ function FogTopBar({ hotspots, onSelect, onDock, onLens, onNavigate }) {
   const [focused, setFocused] = useState(false);
   const matches = useMemo(() => query
     ? hotspots.filter(item => `${item.name} ${item.district}`.toLowerCase().includes(query.toLowerCase())).slice(0, 5)
-    : hotspots.slice(0, 5), [hotspots, query]);
+    : [], [hotspots, query]);
   return <header className="topbar fog-topbar">
     <div className="brand glass">
-      <span className="brand-mark"><CloudFog size={17} /></span>
-      <span className="brand-text"><strong>FogNerve</strong><small><MapPin size={10} /> Sofia, BG · screening model</small></span>
+      <span className="brand-mark"><CloudFog size={15} strokeWidth={2.4} /></span>
+      <span className="brand-text"><strong>FogNerve</strong></span>
     </div>
     <div className={`search glass ${focused ? 'is-focus' : ''}`}>
       <Search size={15} />
-      <input value={query} onChange={e => setQuery(e.target.value)} onFocus={() => setFocused(true)} onBlur={() => setTimeout(() => setFocused(false), 150)} placeholder="Search fog hotspot" aria-label="Search fog hotspots" />
-      {focused && <div className="search-pop">
-        <span className="eyebrow">{query ? 'Matches' : 'Fog hotspots'}</span>
+      <input value={query} onChange={e => setQuery(e.target.value)} onFocus={() => setFocused(true)} onBlur={() => setTimeout(() => setFocused(false), 150)} placeholder="Search" aria-label="Search fog hotspots" />
+      {focused && query && <div className="search-pop">
         {matches.map(item => <button key={item.id} onMouseDown={() => { onSelect(item.id); setQuery(''); }}>
-          <span className={`dot d-${riskClass(item.score)}`} /><span><strong>{item.name}</strong><small>{item.district}</small></span><ArrowUpRight size={13} />
+          <span className={`dot d-${riskClass(item.score)}`} /><span><strong>{item.name}</strong><small>{item.district}</small></span>
         </button>)}
-        {!matches.length && <p className="muted">No OSM road hotspots are currently available.</p>}
+        {!matches.length && <p className="muted">No results</p>}
       </div>}
     </div>
     <nav className="fog-page-nav" aria-label="FogNerve pages">
@@ -150,8 +141,8 @@ function FogTopBar({ hotspots, onSelect, onDock, onLens, onNavigate }) {
       <button onClick={() => onNavigate('fog-sources')}>Data &amp; model</button>
     </nav>
     <div className="top-actions">
-      <button className="ghost-btn glass mobile-only" onClick={onDock}><CloudFog size={15} /><span>Events</span></button>
-      <button className="ghost-btn glass mobile-only" onClick={onLens}><PanelRightOpen size={15} /><span>Risk</span></button>
+      <button className="ghost-btn glass mobile-only" onClick={onDock} aria-label="Episodes and layers"><SlidersHorizontal size={15} /></button>
+      <button className="ghost-btn glass mobile-only" onClick={onLens} aria-label="Details"><PanelRightOpen size={15} /></button>
     </div>
   </header>;
 }
@@ -165,27 +156,22 @@ function FogRiskPanel({ summary, events, hotspots, riskRegister, selectedIndex, 
       {open ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
     </button>
     <div className="lens-scroll">
-      <div className="lens-title"><CloudFog size={18} /><div><h2>Fog exposure</h2><span>{event ? formatDate(event.start) : 'Sofia · five-year observed record'}</span></div></div>
+      <div className="lens-title"><h2>Sofia</h2><span>{event ? formatDate(event.start) : '5-year record'}</span></div>
       <div className="kpi-row">
-        <div className="kpi"><span className="kpi-label">Fog hours</span><span className="kpi-value">{station.fog_hours.toLocaleString('en')}</span><span className="kpi-note">LBSF METAR observed</span></div>
-        <div className="kpi"><span className="kpi-label">Mean visibility</span><span className="kpi-value">{visibility(station.mean_visibility_m)}</span><span className="kpi-note">during fog events</span></div>
-        <div className="kpi"><span className="kpi-label">Minimum</span><span className="kpi-value">{visibility(station.minimum_visibility_m)}</span><span className="kpi-note">station observation</span></div>
+        <div className="kpi"><span className="kpi-label">Fog hours</span><span className="kpi-value">{station.fog_hours.toLocaleString('en')}</span></div>
+        <div className="kpi"><span className="kpi-label">Average</span><span className="kpi-value">{visibility(station.mean_visibility_m)}</span></div>
+        <div className="kpi"><span className="kpi-label">Lowest</span><span className="kpi-value">{visibility(station.minimum_visibility_m)}</span></div>
       </div>
-      {selected && <div className="detail fog-hotspot-detail">
-        <div className="detail-head"><div><span className="eyebrow">{selected.id} · {selected.district}</span><h3>{selected.name}</h3></div><button className="icon-btn" onClick={() => onSelect(null)} aria-label="Close hotspot details"><X size={16} /></button></div>
-        <RiskBadge score={selected.score} />
-        <div className="detail-grid"><div><span>Events</span><b className="mono">{selected.events}</b></div><div><span>Station min vis</span><b className="mono">{visibility(selected.minimum_visibility_m)}</b><small>on matched dates</small></div><div><span>Road exposure</span><b className="mono">{selected.exposed_road_km ?? '—'} km</b></div><div><span>Fog days/yr</span><b className="mono">{selected.fog_days_per_year}</b></div></div>
-        <div className="detail-block"><span className="eyebrow">Observed event dates</span><div className="date-chips">{(selected.recent_dates ?? []).map(date => <span key={date}>{formatDate(date)}</span>)}</div></div>
+      {selected && <div className="detail">
+        <div className="detail-head"><div><span className="detail-kicker">{selected.district}</span><h3>{selected.name}</h3></div><button className="icon-btn round" onClick={() => onSelect(null)} aria-label="Close hotspot details"><X size={14} strokeWidth={2.6} /></button></div>
+        <div className="badge-row"><RiskBadge score={selected.score} showScore={false} /></div>
+        <div className="stat-row">
+          <div><b>{selected.events}</b><span>Episodes</span></div>
+          <div><b>{selected.fog_days_per_year}</b><span>Fog days / yr</span></div>
+          <div><b>{selected.exposed_road_km ?? '—'}<small> km</small></b><span>Road exposed</span></div>
+        </div>
       </div>}
-      <div className="list-head"><h4>Fog hotspots</h4><span>{summary.sources.roads_status === 'available' ? 'OSM roads' : 'OSM unavailable'}</span></div>
-      {hotspots.length ? <ol className="fix-list">
-        {hotspots.map((item, index) => <li key={item.id}><button onClick={() => onSelect(item.id)}>
-          <span className="fix-rank mono">{String(index + 1).padStart(2, '0')}</span>
-          <span className="fix-body"><strong>{item.name}</strong><small>{item.district} · {item.events} fog events</small></span>
-          <RiskBadge score={item.score} />
-        </button></li>)}
-      </ol> : <p className="dock-desc fog-exposure-note">{summary.hotspot_note || 'Road geometries could not be fetched; no road exposure scores are published.'} The verified METAR station record remains available.</p>}
-      {riskRegister.length > 0 && <p className="map-hint"><Info size={12} /> Road length stays blank where OSM exposure was unavailable.</p>}
+      {!selected && <p className="lens-hint"><MapPin size={13} /> {hotspots.length ? 'Tap a marker on the map for details' : 'Road hotspots are unavailable for this run'}</p>}
     </div>
   </aside>;
 }
@@ -224,6 +210,7 @@ function FogMapPage({ data, onNavigate }) {
     const timer = setInterval(() => setHour(current => current >= event.hourly.length - 1 ? 0 : current + 1), 650);
     return () => clearInterval(timer);
   }, [playing, event]);
+  useEffect(() => { if (selectedId) setLensOpen(true); }, [selectedId]);
   useEffect(() => {
     if (!map || !selectedId) return;
     const item = hotspots.find(hotspot => hotspot.id === selectedId);
@@ -234,7 +221,6 @@ function FogMapPage({ data, onNavigate }) {
   if (!summary) return <div className="map-page fog-map-page fog-theme">
     <FogMap grid={null} raster={null} fogProbability={0} expectedVisibility={null} hotspots={[]} layers={layers}
       selectedId={null} onSelect={setSelectedId} onReady={setMap} />
-    <div className="map-vignette fog-vignette" aria-hidden="true" />
     <div className="fog-page-empty"><FogDataState loading={data.loading} error={data.error} /></div>
     <FogTopBar hotspots={[]} onSelect={setSelectedId} onDock={() => setDockOpen(value => !value)}
       onLens={() => setLensOpen(value => !value)} onNavigate={onNavigate} />
@@ -244,7 +230,6 @@ function FogMapPage({ data, onNavigate }) {
     <FogMap grid={summary.grid} raster={summary.grid?.raster} fogProbability={currentProbability}
       expectedVisibility={expectedVisibility} hotspots={hotspots}
       layers={layers} selectedId={selectedId} onSelect={setSelectedId} onReady={setMap} />
-    <div className="map-vignette fog-vignette" aria-hidden="true" />
     <FogTopBar hotspots={hotspots} onSelect={setSelectedId} onDock={() => setDockOpen(value => !value)}
       onLens={() => setLensOpen(value => !value)} onNavigate={onNavigate} />
     <FogDock events={events} selectedIndex={selectedIndex} onSelect={setSelectedIndex} layers={layers}
@@ -252,13 +237,12 @@ function FogMapPage({ data, onNavigate }) {
     <FogRiskPanel summary={summary} events={events} hotspots={hotspots} riskRegister={riskRegister} selectedIndex={selectedIndex}
       selectedId={selectedId} onSelect={setSelectedId} open={lensOpen} setOpen={setLensOpen} />
     {map && <div className="camera glass" aria-label="Fog map camera">
-      <button onClick={() => map.zoomIn()} aria-label="Zoom in">+</button>
-      <button onClick={() => map.zoomOut()} aria-label="Zoom out">−</button>
+      <button onClick={() => map.zoomIn()} aria-label="Zoom in"><Plus size={16} /></button>
+      <button onClick={() => map.zoomOut()} aria-label="Zoom out"><Minus size={16} /></button>
       <button onClick={() => map.easeTo({ pitch: map.getPitch() ? 0 : 60, duration: 700 })} aria-label="Toggle 3D" className="txt">3D</button>
-      <button onClick={() => map.flyTo({ center: [23.326, 42.692], zoom: 12.2, pitch: 60, bearing: -24, duration: 1000 })} aria-label="Reset map"><Waves size={15} /></button>
+      <button onClick={() => map.flyTo({ center: [23.326, 42.692], zoom: 12.2, pitch: 60, bearing: -24, duration: 1000 })} aria-label="Reset map"><RotateCcw size={15} /></button>
     </div>}
     <FogTimeline event={event} hour={hour} setHour={setHour} playing={playing} setPlaying={setPlaying} summary={summary} />
-    <div className="demo-chip fog-chip"><Check size={12} /> Observed IEM METAR · calibrated screening · not an official warning</div>
   </div>;
 }
 
