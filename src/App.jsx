@@ -361,22 +361,19 @@ function StormDock({ summary, eventIdx, setEventIdx, layers, setLayers, open, cl
       <div className="dock-section">
         <h3 className="dock-title">Storms</h3>
         <div className="storm-list">
-          <button
-            className={`storm ${eventIdx === -1 ? "is-on" : ""}`}
-            onClick={() => setEventIdx(-1)}
-          >
-            <span className="storm-date">5-year maximum</span>
-          </button>
-          {summary.events.map((e, i) => (
-            <button
-              key={e.id}
-              className={`storm ${eventIdx === i ? "is-on" : ""}`}
-              onClick={() => setEventIdx(i)}
-            >
-              <span className="storm-date">{fmtDay(e.start)}</span>
-              <span className="storm-meta">{Math.round(e.total_mm)} mm</span>
-            </button>
-          ))}
+          {summary.events
+            .map((e, i) => ({ e, i }))
+            .sort((a, b) => new Date(b.e.start) - new Date(a.e.start))
+            .map(({ e, i }) => (
+              <button
+                key={e.id}
+                className={`storm ${eventIdx === i ? "is-on" : ""}`}
+                onClick={() => setEventIdx(i)}
+              >
+                <span className="storm-date">{fmtDay(e.start)}</span>
+                <span className="storm-meta">{Math.round(e.total_mm)} mm</span>
+              </button>
+            ))}
         </div>
       </div>
       <div className="dock-section">
