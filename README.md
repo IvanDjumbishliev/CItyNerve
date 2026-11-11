@@ -34,15 +34,28 @@ Data is produced by the Python pipeline in [pipeline/](pipeline/README.md) (`npm
 
 Map, terrain, rainfall, soil wetness, lidar and land cover are real data (NASA SRTM, ICESat-2, GPM IMERG, MERRA-2; ESA WorldCover; OpenStreetMap). The flood depths and problem spots are outputs of a **screening model** run on that data (see `pipeline/README.md` for method and limits). It is not an official flood map: sewer capacity is assumed, terrain is 28 m, and rain intensity within a day is smoothed.
 
+## FogNerve · Sofia fog screening
+
+FogNerve is available from the navigation rail beside FloodNerve. It includes a MapLibre 3D terrain map, observed fog-event catalogue and playback, fog-risk register, hotspot panel, and data/model notes.
+
+Run just the fog inputs and model:
+
+```bash
+npm run data:fog
+```
+
+The fog pipeline reuses the SRTM and WorldCover downloads from the flood pipeline when present (it downloads missing shared inputs), then writes `fog_summary.json`, `fog_events.json`, `fog_hotspots.json`, `fog_risk_register.json` and `fog_proneness.png` into `public/data/`. The full `npm run data` run includes FogNerve after FloodNerve.
+
+Observed episodes are based on real Iowa Environmental Mesonet METAR visibility and FG/BR/FZFG weather codes at Sofia Airport (LBSF). Hourly temperature, dew point, relative humidity, wind and low cloud are from ERA5 via Open-Meteo; NASA POWER MERRA-2 temperature, dew point, humidity and wind are fetched as a secondary series. The station model is calibrated on real observations and reports chronological holdout hit rate, false-alarm rate, probability of detection (POD) and false-alarm ratio (FAR). The city raster is a modelled terrain-proneness adjustment, not a grid of observed visibility.
+
+OpenStreetMap road exposure is fetched from Overpass when a public endpoint is reachable. If that service is unavailable, road lengths and traffic exposure are left blank and the data page reports the source failure; they are not estimated as zero or fabricated. NASA POWER rejected the proposed cloud-cover/PBLH parameter names, so ERA5 via Open-Meteo supplies low-cloud cover; no satellite fog product is used. **FogNerve is a screening prototype, not an official fog warning and not for safety-critical use.** Do not use it to issue speed limits, signage, de-icing actions, or operational instructions without independent field validation.
+
 ## Where to start integrating
 
-1. `src/data.js` holds initial city configs, modules, sample incidents and scenarios.
-2. `src/App.jsx` holds the current UI, navigation and incident state.
-3. Create `src/services/weather.js` to request weather forecasts by city.
-4. Create `src/services/api.js` to talk to a Cloudflare Worker / D1 backend.
-5. Move incident generation into an API backed by D1; retain demo scenarios separately.
-6. Replace the illustrative SVG map with Leaflet and OpenStreetMap tiles.
-7. Add ESP32 telemetry via a backend endpoint (never expose control secrets in the frontend).
+1. `src/data.js` holds FloodNerve's Sofia map configuration.
+2. `src/App.jsx` registers FloodNerve, FogNerve, and the platform navigation.
+3. FogNerve observations and model outputs are fetched by `src/useFogData.js`.
+4. `pipeline/fetch_fog_inputs.py` and `pipeline/fog_model.py` build its station catalogue, validation metrics, and terrain/exposure outputs.
 
 ## Suggested initial API contract
 

@@ -25,7 +25,7 @@ export const STYLE = {
       tileSize: 256,
       maxzoom: 13,
       attribution:
-        "Terrain: SRTM (NASA) via AWS Terrain Tiles · Flood model: NASA GPM IMERG, MERRA-2, ICESat-2",
+        "Terrain: SRTM (NASA) via AWS Terrain Tiles · FloodNerve and FogNerve screening models",
     },
     hill: {
       type: "raster-dem",

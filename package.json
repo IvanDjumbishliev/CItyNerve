@@ -7,7 +7,8 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "data": "pipeline/.venv/Scripts/python pipeline/run_all.py"
+    "data": "node pipeline/run_all.mjs",
+    "data:fog": "node pipeline/run_fog.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
