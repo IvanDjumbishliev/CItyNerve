@@ -108,7 +108,7 @@ export default function HeatPage() {
             id: "shade",
             type: "fill",
             source: "shade",
-            paint: { "fill-color": "#466378", "fill-opacity": 0.72 },
+            paint: { "fill-color": "#666666", "fill-opacity": 0.72 },
           },
           "road-label",
         );
@@ -203,7 +203,7 @@ export default function HeatPage() {
                     <i
                       key={s.hour}
                       title={timeLabel(s.hour)}
-                      style={{ background: inShade(point, s.shadow) ? "#466378" : "#edb65f" }}
+                      style={{ background: inShade(point, s.shadow) ? "#666666" : "#edb65f" }}
                     />
                   ))}
                 </div>
@@ -212,7 +212,7 @@ export default function HeatPage() {
           </>
         ) : (
           <p>
-            Gold shows exposed ground. Blue shows projected building shade. Click a street or square
+            Gold shows exposed ground. Gray shows projected building shade. Click a street or square
             inside the study area.
           </p>
         )}
