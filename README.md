@@ -50,6 +50,16 @@ Observed episodes are based on real Iowa Environmental Mesonet METAR visibility 
 
 OpenStreetMap road exposure is fetched from Overpass when a public endpoint is reachable. If that service is unavailable, road lengths and traffic exposure are left blank and the data page reports the source failure; they are not estimated as zero or fabricated. NASA POWER rejected the proposed cloud-cover/PBLH parameter names, so ERA5 via Open-Meteo supplies low-cloud cover; no satellite fog product is used. **FogNerve is a screening prototype, not an official fog warning and not for safety-critical use.** Do not use it to issue speed limits, signage, de-icing actions, or operational instructions without independent field validation.
 
+## HeatNerve · Sofia urban heat island
+
+HeatNerve (Heat map, Heat risk, Heat data in the navigation rail) shows how much hotter Sofia's concrete, asphalt and roofs get than the countryside around it, and what to do about it at each hot spot.
+
+```bash
+npm run data:heat
+```
+
+Real inputs, no logins: **Landsat 8/9 Collection 2 Level-2** surface temperature (thermal band 10) and surface reflectance for every clear summer pass 2022–2026 (Microsoft Planetary Computer STAC); **GEDI L2A** and **ICESat-2 ATL08** space lidar via SlideRule (tree canopy vs roof heights); **NASA POWER** daily air temperature (hot days, heatwaves); ESA WorldCover and SRTM from the shared pipeline. `pipeline/heat_model.py` computes the surface heat island (pass temperature − vegetated countryside at the same altitude), NDVI and albedo, a regression on Sofia's own cells for cooling estimates, and ranks hotspots named from OpenStreetMap. Each hotspot lists its data-derived cause (bare ground, large roofs/paved lots, dark surfaces, missing trees) and actions. Outputs go to `public/data/heat/`. Landsat measures midday **surface** temperature, not air temperature, and the cooling numbers are statistical associations, not a design guarantee.
+
 ## Where to start integrating
 
 1. `src/data.js` holds FloodNerve's Sofia map configuration.

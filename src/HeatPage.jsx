@@ -5,6 +5,7 @@ import SatelliteHeat from "./heat/SatelliteHeat.jsx";
 import { buildingShadows, sunPosition, inShade, inRing } from "./heat/shadows.js";
 
 import { HEAT_TOWNS, boundary, coverageOf, loadNeighborhood } from "./heat/towns.js";
+import { Play, Pause, MapPin, Maximize2, Building2, Loader2, ChevronDown, X } from "lucide-react";
 const empty = { type: "FeatureCollection", features: [] };
 const timeLabel = (hour) =>
   Math.floor(hour).toString().padStart(2, "0") +
@@ -216,6 +217,15 @@ function TownHeat({ town, townId, setTownId }) {
     const id = setInterval(() => setHour((h) => (h >= 20 ? 6 : h + 0.25)), 300);
     return () => clearInterval(id);
   }, [playing]);
+  const status = point
+    ? roof
+      ? "Building footprint"
+      : sun.altitude <= 0
+        ? "After sunset"
+        : inShade(point, shadows)
+          ? "In shade"
+          : "In direct sun"
+    : null;
   return (
     <div className="sun-page">
       <div
@@ -224,8 +234,9 @@ function TownHeat({ town, townId, setTownId }) {
         aria-label={town.name + " 3D sunlight and building shadows"}
       />
       <header className="sun-title glass">
+        <h1>Follow the shade</h1>
         <label className="sun-town">
-          Town
+          <span className="sr-only">Town</span>
           <select aria-label="Heat town" value={townId} onChange={(e) => setTownId(e.target.value)}>
             {HEAT_TOWNS.map((t) => (
               <option key={t.id} value={t.id}>
@@ -233,55 +244,64 @@ function TownHeat({ town, townId, setTownId }) {
               </option>
             ))}
           </select>
+          <ChevronDown size={14} aria-hidden="true" />
         </label>
-        <h1>Follow the shade</h1>
-        <p>See where buildings shelter the street as the sun moves.</p>
       </header>
       <aside className="sun-inspector glass">
-        <span className="eyebrow">Street exposure</span>
-        <h2>
-          {point
-            ? roof
-              ? "Building footprint"
-              : sun.altitude <= 0
-                ? "After sunset"
-                : inShade(point, shadows)
-                  ? "In building shade"
-                  : "In direct sunlight"
-            : "Pick a place on the map"}
-        </h2>
         {point ? (
           <>
-            <p>
-              {point[1].toFixed(5)}° N · {point[0].toFixed(5)}° E
-            </p>
+            <span className="sun-kicker">Street exposure</span>
+            <h2>{status}</h2>
             {!roof && (
               <>
-                <strong className="sun-number">≈{exposure} h</strong>
-                <p>Direct sun across the 06:00–20:00 window, sampled every 30 minutes.</p>
-                <div className="sun-strip">
+                <strong className="sun-number">
+                  {exposure}
+                  <small> h of sun</small>
+                </strong>
+                <div className="sun-strip" aria-label="Sun and shade from 06:00 to 20:00">
                   {samples.map((s) => (
                     <i
                       key={s.hour}
                       title={timeLabel(s.hour)}
-                      style={{ background: s.shaded ? "#666666" : "#edb65f" }}
+                      className={s.shaded ? "is-shade" : ""}
                     />
                   ))}
                 </div>
+                <div className="sun-strip-axis">
+                  <span>06:00</span>
+                  <span>13:00</span>
+                  <span>20:00</span>
+                </div>
               </>
             )}
+            <button className="sun-link" onClick={() => setPoint(null)}>
+              Clear selection
+            </button>
           </>
         ) : (
-          <p>
-            Gold shows exposed ground. Gray shows projected building shade. Click a street or square
-            inside the study area.
+          <p className="sun-empty">
+            <MapPin size={14} />{" "}
+            {outside
+              ? "Outside the loaded area. Load buildings here first."
+              : "Tap a street inside the dashed area"}
           </p>
         )}
         <div className="sun-locations">
-          <button disabled={loading || !ready} onClick={loadHere}>
-            {loading ? "Loading neighborhood…" : "Load buildings here"}
+          <button className="sun-btn primary" disabled={loading || !ready} onClick={loadHere}>
+            {loading ? (
+              <>
+                <Loader2 size={15} className="spin" /> Loading…
+              </>
+            ) : (
+              <>
+                <Building2 size={15} /> Load buildings here
+              </>
+            )}
           </button>
           <button
+            className="sun-btn icon"
+            title="Show loaded area"
+            aria-label="Show loaded area"
             disabled={!bounds || !ready}
             onClick={() =>
               map.current?.fitBounds(
@@ -293,54 +313,53 @@ function TownHeat({ town, townId, setTownId }) {
               )
             }
           >
-            Show loaded area
+            <Maximize2 size={15} />
           </button>
         </div>
-        <p>
-          {outside
-            ? "This point is outside the loaded area. Center the map on it and load buildings here."
-            : "Inspect inside the dashed boundary. Pan to another neighborhood and choose Load buildings here to explore more of the town."}
-        </p>
-        <details>
-          <summary>What the model includes</summary>
-          <p>
-            Clear-sky sun position and flat-ground shadows from OpenStreetMap footprints. Heights
-            include level-based estimates and a 9 m fallback. Courtyard holes and buildings
-            represented only as OSM relations are omitted. Shade near the boundary can miss
-            buildings outside the loaded area. Trees, terrain, clouds, reflections and stored heat
-            require further data. Sun exposure indicates potential radiant heating.
+        {error && (
+          <p className="sun-error" role="alert">
+            {error}
           </p>
-          <a href="https://www.openstreetmap.org/copyright">OpenStreetMap building data · ODbL</a>
-        </details>
-        {town.id === "sofia" && (
-          <button className="sun-context" onClick={() => setSatellite(!satellite)}>
-            {satellite ? "Close satellite context" : "View satellite heat record"}
-          </button>
         )}
-        {error && <p role="alert">{error}</p>}
-        {!buildings && !error && <p>Loading building geometry…</p>}
+        {!buildings && !error && (
+          <p className="sun-empty">
+            <Loader2 size={14} className="spin" /> Loading buildings…
+          </p>
+        )}
+        <div className="sun-foot">
+          {town.id === "sofia" && (
+            <button className="sun-link" onClick={() => setSatellite(!satellite)}>
+              Satellite heat record
+            </button>
+          )}
+          <details>
+            <summary>About the model</summary>
+            <p>
+              Clear-sky sun position and flat-ground shadows from OpenStreetMap footprints. Heights
+              include level-based estimates and a 9 m fallback. Courtyard holes and buildings
+              represented only as OSM relations are omitted. Shade near the boundary can miss
+              buildings outside the loaded area. Trees, terrain, clouds, reflections and stored heat
+              require further data. Sun exposure indicates potential radiant heating.
+            </p>
+            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap building data · ODbL</a>
+          </details>
+        </div>
       </aside>
       <div className="sun-time glass">
-        <button disabled={!ready || !buildings || loading} onClick={() => setPlaying(!playing)}>
-          {playing ? "Pause" : "Play daylight"}
+        <button
+          className="sun-play"
+          disabled={!ready || !buildings || loading}
+          onClick={() => setPlaying(!playing)}
+          aria-label={playing ? "Pause" : "Play daylight"}
+        >
+          {playing ? (
+            <Pause size={15} fill="currentColor" />
+          ) : (
+            <Play size={15} fill="currentColor" />
+          )}
         </button>
-        <label>
-          Summer date
-          <input
-            type="date"
-            min="2026-06-01"
-            max="2026-08-31"
-            value={day}
-            onChange={(e) => {
-              if (e.target.value >= "2026-06-01" && e.target.value <= "2026-08-31")
-                setDay(e.target.value);
-            }}
-          />
-        </label>
         <label className="sun-slider">
-          <span>
-            <b>{timeLabel(hour)}</b> · {town.name} local time
-          </span>
+          <span className="sun-clock">{timeLabel(hour)}</span>
           <input
             aria-label="Time of day"
             type="range"
@@ -354,13 +373,31 @@ function TownHeat({ town, townId, setTownId }) {
             }}
           />
         </label>
+        <input
+          className="sun-date"
+          aria-label="Summer date"
+          type="date"
+          min="2026-06-01"
+          max="2026-08-31"
+          value={day}
+          onChange={(e) => {
+            if (e.target.value >= "2026-06-01" && e.target.value <= "2026-08-31")
+              setDay(e.target.value);
+          }}
+        />
         <span className="sun-key">
-          <i /> Direct sun <i /> Building shade
+          <i /> Sun <i /> Shade
         </span>
       </div>
       {satellite && (
         <div className="sun-satellite glass">
-          <button onClick={() => setSatellite(false)}>Close satellite record</button>
+          <button
+            className="icon-btn round sun-close"
+            onClick={() => setSatellite(false)}
+            aria-label="Close satellite record"
+          >
+            <X size={14} strokeWidth={2.6} />
+          </button>
           <SatelliteHeat />
         </div>
       )}

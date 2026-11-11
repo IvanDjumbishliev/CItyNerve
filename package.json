@@ -9,6 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "data": "node pipeline/run_all.mjs",
     "data:fog": "node pipeline/run_fog.mjs",
+    "data:heat": "node pipeline/run_heat.mjs",
     "start": "node server/start.js"
   },
   "dependencies": {

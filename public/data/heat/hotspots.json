@@ -1,0 +1,867 @@
+[
+ {
+  "id": "UH-01",
+  "name": "Industrial yards",
+  "district": "Slatina industrial zone",
+  "place_kind": "industrial",
+  "coord": [
+   23.3856,
+   42.67777
+  ],
+  "score": 98,
+  "cause": "large_roofs",
+  "uhi_c": 14.0,
+  "uhi_peak_c": 21.0,
+  "lst_c": 50.1,
+  "lst_hot_c": 53.9,
+  "hot_share": 0.95,
+  "ndvi": 0.24,
+  "albedo": 0.12,
+  "built_share": 0.93,
+  "hot_built_ha": 17.7,
+  "lidar": {
+   "gedi_shots": 32,
+   "tree_share": 0.12,
+   "roof_height_m": 8.0,
+   "atl08_segments": 71,
+   "atl08_canopy_m": 7.5
+  },
+  "problems": [
+   "Surface runs 14.0 °C hotter than the surrounding countryside at midday, 54 °C on the hottest 10% of passes.",
+   "OpenStreetMap maps this as industrial land: wide roofs, yards and paved lots with little shade.",
+   "Above +6 °C on 95% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 12% of 32 laser shots here hit tree canopy; roofs stand ≈8 m tall.",
+   "Vegetation index 0.24 is below the city's built-up median (0.36).",
+   "Surfaces reflect only 12% of sunlight (city median 16%): dark asphalt and roofing absorb the rest."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-02",
+  "name": "Lyuben Zlatarov",
+  "district": "Iskar industrial zone",
+  "place_kind": "industrial",
+  "coord": [
+   23.41787,
+   42.65732
+  ],
+  "score": 95,
+  "cause": "large_roofs",
+  "uhi_c": 12.7,
+  "uhi_peak_c": 19.1,
+  "lst_c": 48.7,
+  "lst_hot_c": 52.3,
+  "hot_share": 0.91,
+  "ndvi": 0.21,
+  "albedo": 0.122,
+  "built_share": 0.97,
+  "hot_built_ha": 18.3,
+  "lidar": {
+   "gedi_shots": 24,
+   "tree_share": 0.08,
+   "roof_height_m": 7.2,
+   "atl08_segments": 63,
+   "atl08_canopy_m": 5.8
+  },
+  "problems": [
+   "Surface runs 12.7 °C hotter than the surrounding countryside at midday, 52 °C on the hottest 10% of passes.",
+   "OpenStreetMap maps this as industrial land: wide roofs, yards and paved lots with little shade.",
+   "Above +6 °C on 91% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 8% of 24 laser shots here hit tree canopy; roofs stand ≈7 m tall.",
+   "Vegetation index 0.21 is below the city's built-up median (0.36).",
+   "Surfaces reflect only 12% of sunlight (city median 16%): dark asphalt and roofing absorb the rest."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-03",
+  "name": "Petar Panayotov",
+  "district": "Iliyantsi",
+  "place_kind": null,
+  "coord": [
+   23.31282,
+   42.74184
+  ],
+  "score": 88,
+  "cause": "large_roofs",
+  "uhi_c": 11.4,
+  "uhi_peak_c": 18.7,
+  "lst_c": 47.5,
+  "lst_hot_c": 51.6,
+  "hot_share": 0.88,
+  "ndvi": 0.2,
+  "albedo": 0.151,
+  "built_share": 0.9,
+  "hot_built_ha": 16.2,
+  "lidar": {
+   "gedi_shots": 34,
+   "tree_share": 0.26,
+   "roof_height_m": 6.8,
+   "atl08_segments": 208,
+   "atl08_canopy_m": 10.3
+  },
+  "problems": [
+   "Surface runs 11.4 °C hotter than the surrounding countryside at midday, 52 °C on the hottest 10% of passes.",
+   "Above +6 °C on 88% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 26% of 34 laser shots here hit tree canopy; roofs stand ≈7 m tall.",
+   "Vegetation index 0.20 is below the city's built-up median (0.36).",
+   "Surfaces reflect only 15% of sunlight (city median 16%): dark asphalt and roofing absorb the rest."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-04",
+  "name": "Sofia-Bojurishte economic zone",
+  "district": "Bozhurishte",
+  "place_kind": "industrial",
+  "coord": [
+   23.19231,
+   42.73478
+  ],
+  "score": 77,
+  "cause": "large_roofs",
+  "uhi_c": 10.0,
+  "uhi_peak_c": 14.8,
+  "lst_c": 45.6,
+  "lst_hot_c": 50.3,
+  "hot_share": 0.81,
+  "ndvi": 0.13,
+  "albedo": 0.224,
+  "built_share": 0.83,
+  "hot_built_ha": 13.7,
+  "lidar": {
+   "gedi_shots": 35,
+   "tree_share": 0.0,
+   "roof_height_m": 3.8,
+   "atl08_segments": 212,
+   "atl08_canopy_m": 4.3
+  },
+  "problems": [
+   "Surface runs 10.0 °C hotter than the surrounding countryside at midday, 50 °C on the hottest 10% of passes.",
+   "OpenStreetMap maps this as industrial land: wide roofs, yards and paved lots with little shade.",
+   "Above +6 °C on 81% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 0% of 35 laser shots here hit tree canopy; roofs stand ≈4 m tall.",
+   "Vegetation index 0.13 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 0.8,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-05",
+  "name": "Built-up block",
+  "district": "Voenna rampa",
+  "place_kind": null,
+  "coord": [
+   23.32586,
+   42.73453
+  ],
+  "score": 70,
+  "cause": "no_shade",
+  "uhi_c": 8.8,
+  "uhi_peak_c": 15.3,
+  "lst_c": 44.9,
+  "lst_hot_c": 49.1,
+  "hot_share": 0.71,
+  "ndvi": 0.23,
+  "albedo": 0.166,
+  "built_share": 0.93,
+  "hot_built_ha": 15.2,
+  "lidar": {
+   "gedi_shots": 24,
+   "tree_share": 0.04,
+   "roof_height_m": 6.4,
+   "atl08_segments": 151,
+   "atl08_canopy_m": 9.9
+  },
+  "problems": [
+   "Surface runs 8.8 °C hotter than the surrounding countryside at midday, 49 °C on the hottest 10% of passes.",
+   "Above +6 °C on 71% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 4% of 24 laser shots here hit tree canopy; roofs stand ≈6 m tall.",
+   "Vegetation index 0.23 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-06",
+  "name": "Georgi Partsalev",
+  "district": "Kazichene",
+  "place_kind": null,
+  "coord": [
+   23.45907,
+   42.65176
+  ],
+  "score": 70,
+  "cause": "large_roofs",
+  "uhi_c": 8.9,
+  "uhi_peak_c": 12.6,
+  "lst_c": 44.6,
+  "lst_hot_c": 48.8,
+  "hot_share": 0.74,
+  "ndvi": 0.18,
+  "albedo": 0.197,
+  "built_share": 0.92,
+  "hot_built_ha": 14.3,
+  "lidar": {
+   "gedi_shots": 43,
+   "tree_share": 0.07,
+   "roof_height_m": 8.4,
+   "atl08_segments": 238,
+   "atl08_canopy_m": 4.8
+  },
+  "problems": [
+   "Surface runs 8.9 °C hotter than the surrounding countryside at midday, 49 °C on the hottest 10% of passes.",
+   "Above +6 °C on 74% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 7% of 43 laser shots here hit tree canopy; roofs stand ≈8 m tall.",
+   "Vegetation index 0.18 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-07",
+  "name": "Toncho Zhechev",
+  "district": "Moderno predgradie industrial zone",
+  "place_kind": "industrial",
+  "coord": [
+   23.2596,
+   42.73428
+  ],
+  "score": 67,
+  "cause": "large_roofs",
+  "uhi_c": 8.5,
+  "uhi_peak_c": 13.0,
+  "lst_c": 44.2,
+  "lst_hot_c": 48.1,
+  "hot_share": 0.75,
+  "ndvi": 0.25,
+  "albedo": 0.166,
+  "built_share": 0.82,
+  "hot_built_ha": 13.8,
+  "lidar": {
+   "gedi_shots": 33,
+   "tree_share": 0.0,
+   "roof_height_m": 6.2,
+   "atl08_segments": 69,
+   "atl08_canopy_m": 5.2
+  },
+  "problems": [
+   "Surface runs 8.5 °C hotter than the surrounding countryside at midday, 48 °C on the hottest 10% of passes.",
+   "OpenStreetMap maps this as industrial land: wide roofs, yards and paved lots with little shade.",
+   "Above +6 °C on 75% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 0% of 33 laser shots here hit tree canopy; roofs stand ≈6 m tall.",
+   "Vegetation index 0.25 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-08",
+  "name": "Prof. Nikola Chilov",
+  "district": "Iskar industrial zone",
+  "place_kind": "industrial",
+  "coord": [
+   23.40654,
+   42.65934
+  ],
+  "score": 67,
+  "cause": "large_roofs",
+  "uhi_c": 8.2,
+  "uhi_peak_c": 11.0,
+  "lst_c": 43.9,
+  "lst_hot_c": 47.9,
+  "hot_share": 0.71,
+  "ndvi": 0.19,
+  "albedo": 0.176,
+  "built_share": 0.98,
+  "hot_built_ha": 17.0,
+  "lidar": {
+   "gedi_shots": 27,
+   "tree_share": 0.15,
+   "roof_height_m": 8.8,
+   "atl08_segments": 177,
+   "atl08_canopy_m": 9.7
+  },
+  "problems": [
+   "Surface runs 8.2 °C hotter than the surrounding countryside at midday, 48 °C on the hottest 10% of passes.",
+   "OpenStreetMap maps this as industrial land: wide roofs, yards and paved lots with little shade.",
+   "Above +6 °C on 71% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 15% of 27 laser shots here hit tree canopy; roofs stand ≈9 m tall.",
+   "Vegetation index 0.19 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-09",
+  "name": "Built-up block",
+  "district": "Aerogarata",
+  "place_kind": null,
+  "coord": [
+   23.40792,
+   42.68811
+  ],
+  "score": 67,
+  "cause": "large_roofs",
+  "uhi_c": 8.1,
+  "uhi_peak_c": 10.5,
+  "lst_c": 44.0,
+  "lst_hot_c": 47.9,
+  "hot_share": 0.71,
+  "ndvi": 0.15,
+  "albedo": 0.196,
+  "built_share": 0.96,
+  "hot_built_ha": 16.8,
+  "lidar": {
+   "gedi_shots": 41,
+   "tree_share": 0.17,
+   "roof_height_m": 9.1,
+   "atl08_segments": 122,
+   "atl08_canopy_m": 6.2
+  },
+  "problems": [
+   "Surface runs 8.1 °C hotter than the surrounding countryside at midday, 48 °C on the hottest 10% of passes.",
+   "Above +6 °C on 71% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 17% of 41 laser shots here hit tree canopy; roofs stand ≈9 m tall.",
+   "Vegetation index 0.15 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-10",
+  "name": "Built-up block",
+  "district": "Sofia",
+  "place_kind": null,
+  "coord": [
+   23.40689,
+   42.69922
+  ],
+  "score": 61,
+  "cause": "no_shade",
+  "uhi_c": 8.6,
+  "uhi_peak_c": 9.6,
+  "lst_c": 45.0,
+  "lst_hot_c": 49.2,
+  "hot_share": 0.79,
+  "ndvi": 0.29,
+  "albedo": 0.186,
+  "built_share": 0.52,
+  "hot_built_ha": 9.8,
+  "lidar": {
+   "gedi_shots": 42,
+   "tree_share": 0.05,
+   "roof_height_m": 4.9,
+   "atl08_segments": 57,
+   "atl08_canopy_m": 8.3
+  },
+  "problems": [
+   "Surface runs 8.6 °C hotter than the surrounding countryside at midday, 49 °C on the hottest 10% of passes.",
+   "Above +6 °C on 79% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 5% of 42 laser shots here hit tree canopy; roofs stand ≈5 m tall.",
+   "Vegetation index 0.29 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-11",
+  "name": "Poruchik Nedelcho Bonchev",
+  "district": "Iskar industrial zone",
+  "place_kind": "industrial",
+  "coord": [
+   23.41272,
+   42.67019
+  ],
+  "score": 58,
+  "cause": "large_roofs",
+  "uhi_c": 7.8,
+  "uhi_peak_c": 12.6,
+  "lst_c": 43.5,
+  "lst_hot_c": 47.6,
+  "hot_share": 0.69,
+  "ndvi": 0.29,
+  "albedo": 0.175,
+  "built_share": 0.82,
+  "hot_built_ha": 11.6,
+  "lidar": {
+   "gedi_shots": 24,
+   "tree_share": 0.21,
+   "roof_height_m": 8.3,
+   "atl08_segments": 57,
+   "atl08_canopy_m": 10.3
+  },
+  "problems": [
+   "Surface runs 7.8 °C hotter than the surrounding countryside at midday, 48 °C on the hottest 10% of passes.",
+   "OpenStreetMap maps this as industrial land: wide roofs, yards and paved lots with little shade.",
+   "Above +6 °C on 69% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 21% of 24 laser shots here hit tree canopy; roofs stand ≈8 m tall.",
+   "Vegetation index 0.29 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-12",
+  "name": "Suhodolska reka",
+  "district": "Moderno predgradie",
+  "place_kind": "industrial",
+  "coord": [
+   23.28638,
+   42.72268
+  ],
+  "score": 57,
+  "cause": "large_roofs",
+  "uhi_c": 7.2,
+  "uhi_peak_c": 10.7,
+  "lst_c": 43.2,
+  "lst_hot_c": 46.8,
+  "hot_share": 0.63,
+  "ndvi": 0.29,
+  "albedo": 0.165,
+  "built_share": 0.91,
+  "hot_built_ha": 13.6,
+  "lidar": {
+   "gedi_shots": 57,
+   "tree_share": 0.23,
+   "roof_height_m": 6.5,
+   "atl08_segments": 148,
+   "atl08_canopy_m": 8.4
+  },
+  "problems": [
+   "Surface runs 7.2 °C hotter than the surrounding countryside at midday, 47 °C on the hottest 10% of passes.",
+   "OpenStreetMap maps this as industrial land: wide roofs, yards and paved lots with little shade.",
+   "Above +6 °C on 63% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 23% of 57 laser shots here hit tree canopy; roofs stand ≈6 m tall.",
+   "Vegetation index 0.29 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-13",
+  "name": "Orion industrial zone",
+  "district": "Zaharna fabrika",
+  "place_kind": "industrial",
+  "coord": [
+   23.29977,
+   42.71965
+  ],
+  "score": 57,
+  "cause": "large_roofs",
+  "uhi_c": 7.5,
+  "uhi_peak_c": 9.9,
+  "lst_c": 43.5,
+  "lst_hot_c": 47.3,
+  "hot_share": 0.63,
+  "ndvi": 0.29,
+  "albedo": 0.16,
+  "built_share": 0.89,
+  "hot_built_ha": 12.9,
+  "lidar": {
+   "gedi_shots": 37,
+   "tree_share": 0.16,
+   "roof_height_m": 6.9,
+   "atl08_segments": 48,
+   "atl08_canopy_m": 9.3
+  },
+  "problems": [
+   "Surface runs 7.5 °C hotter than the surrounding countryside at midday, 47 °C on the hottest 10% of passes.",
+   "OpenStreetMap maps this as industrial land: wide roofs, yards and paved lots with little shade.",
+   "Above +6 °C on 63% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 16% of 37 laser shots here hit tree canopy; roofs stand ≈7 m tall.",
+   "Vegetation index 0.29 is below the city's built-up median (0.36).",
+   "Surfaces reflect only 16% of sunlight (city median 16%): dark asphalt and roofing absorb the rest."
+  ],
+  "actions": [
+   {
+    "title": "Cool or green roofs on large buildings",
+    "detail": "Reflective (white) membranes or extensive green roofs on warehouses, malls and halls; pair with rooftop solar.",
+    "cooling_c": 1.1,
+    "lever": "albedo"
+   },
+   {
+    "title": "Shade car parks",
+    "detail": "Tree rows every 4–5 bays or solar carports over open parking; permeable paving.",
+    "cooling_c": 1.2,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-14",
+  "name": "Evtim Evtimov",
+  "district": "ZHP blokove gara Kremikovtsi",
+  "place_kind": null,
+  "coord": [
+   23.49031,
+   42.75848
+  ],
+  "score": 55,
+  "cause": "no_shade",
+  "uhi_c": 8.1,
+  "uhi_peak_c": 14.6,
+  "lst_c": 43.5,
+  "lst_hot_c": 48.6,
+  "hot_share": 0.72,
+  "ndvi": 0.34,
+  "albedo": 0.159,
+  "built_share": 0.73,
+  "hot_built_ha": 8.7,
+  "lidar": {
+   "gedi_shots": 39,
+   "tree_share": 0.26,
+   "roof_height_m": 14.8,
+   "atl08_segments": 66,
+   "atl08_canopy_m": 3.5
+  },
+  "problems": [
+   "Surface runs 8.1 °C hotter than the surrounding countryside at midday, 49 °C on the hottest 10% of passes.",
+   "Above +6 °C on 72% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 26% of 39 laser shots here hit tree canopy; roofs stand ≈15 m tall.",
+   "Vegetation index 0.34 is below the city's built-up median (0.36).",
+   "Surfaces reflect only 16% of sunlight (city median 16%): dark asphalt and roofing absorb the rest."
+  ],
+  "actions": [
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ },
+ {
+  "id": "UH-15",
+  "name": "Rezbarska",
+  "district": "Hadzhi Dimitar",
+  "place_kind": null,
+  "coord": [
+   23.35093,
+   42.71208
+  ],
+  "score": 55,
+  "cause": "no_shade",
+  "uhi_c": 7.6,
+  "uhi_peak_c": 12.2,
+  "lst_c": 43.8,
+  "lst_hot_c": 47.1,
+  "hot_share": 0.64,
+  "ndvi": 0.26,
+  "albedo": 0.164,
+  "built_share": 0.89,
+  "hot_built_ha": 11.6,
+  "lidar": {
+   "gedi_shots": 47,
+   "tree_share": 0.17,
+   "roof_height_m": 8.2,
+   "atl08_segments": 254,
+   "atl08_canopy_m": 8.6
+  },
+  "problems": [
+   "Surface runs 7.6 °C hotter than the surrounding countryside at midday, 47 °C on the hottest 10% of passes.",
+   "Above +6 °C on 64% of 45 clear summer Landsat passes, so this is a persistent problem, not a single hot day.",
+   "GEDI lidar: only 17% of 47 laser shots here hit tree canopy; roofs stand ≈8 m tall.",
+   "Vegetation index 0.26 is below the city's built-up median (0.36)."
+  ],
+  "actions": [
+   {
+    "title": "Plant street trees and pocket parks",
+    "detail": "Continuous canopy along streets and in courtyards; trees shade pavement and cool by evaporation.",
+    "cooling_c": 2.1,
+    "lever": "vegetation"
+   },
+   {
+    "title": "Heat-health protection",
+    "detail": "Drinking fountains, shaded bus stops, cooling centres and check-ins for elderly residents during NASA POWER-recorded heatwaves (≥3 days ≥30 °C).",
+    "cooling_c": null,
+    "lever": "people"
+   }
+  ]
+ }
+]

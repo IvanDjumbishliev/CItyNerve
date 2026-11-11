@@ -223,7 +223,7 @@ const MIN_SHOW = 0.1;
 // With 3D terrain MapLibre caches draped raster layers per terrain tile and only
 // redraws them when tile coverage changes, not when a canvas source's pixels change.
 // Free that cache after every repaint of our canvases so the water is always current.
-function refreshDrape(map) {
+export function refreshDrape(map) {
   if (!map) return;
   try {
     map.terrain?.sourceCache?.freeRtt();
@@ -240,7 +240,7 @@ const mx = (lon) => (lon + 180) / 360;
 const my = (lat) => (1 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / Math.PI) / 2;
 const lonOf = (x) => x * 360 - 180;
 const latOf = (y) => (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
-function makeDrapeCanvas(bounds, cols, rows) {
+export function makeDrapeCanvas(bounds, cols, rows) {
   const [[w, n], [e], , [, s]] = [bounds[0], bounds[1], bounds[2], bounds[3]];
   const x0 = mx(w),
     x1 = mx(e),
@@ -284,7 +284,7 @@ function makeDrapeCanvas(bounds, cols, rows) {
   ];
   return { display, dctx: display.getContext("2d"), coords, offX, offY };
 }
-function blit(d, src) {
+export function blit(d, src) {
   if (!d) return;
   d.dctx.clearRect(d.offX, d.offY, src.width, src.height);
   d.dctx.drawImage(src, d.offX, d.offY);

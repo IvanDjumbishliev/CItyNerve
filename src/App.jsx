@@ -63,6 +63,7 @@ import {
   onStats,
 } from "./damSim.js";
 import FogNerve from "./FogNerve.jsx";
+import HeatNerve from "./HeatNerve.jsx";
 import LegacyApp from "./legacy/LegacyApp.jsx";
 import "./legacy/legacy.css";
 
@@ -146,6 +147,14 @@ const RAIL_GROUPS = [
       ["fog-map", "Fog map", CloudFog],
       ["fog-register", "Fog risk", ListOrdered],
       ["fog-sources", "Fog data", Satellite],
+    ],
+  },
+  {
+    label: "HeatNerve",
+    items: [
+      ["heat-map", "Heat map", ThermometerSun],
+      ["heat-register", "Heat risk", ListOrdered],
+      ["heat-sources", "Heat data", Satellite],
     ],
   },
   {
@@ -1442,7 +1451,7 @@ function SourcesPage({ data }) {
 }
 
 export default function App() {
-  const [page, setPage] = useState("map");
+  const [page, setPage] = useState(() => window.location.hash.slice(1) || "map"); // e.g. #heat-map
   const [region, setRegion] = useState("sofia");
   const data = useFloodData(region);
   return (
@@ -1455,6 +1464,7 @@ export default function App() {
         {page === "l-heat" && <HeatPage />}
         {page === "l-mobility" && <MobilityPage />}
         {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
+        {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
         {page !== "l-heat" && page !== "l-mobility" && page.startsWith("l-") && (
           <LegacyApp
             page={page.slice(2)}
