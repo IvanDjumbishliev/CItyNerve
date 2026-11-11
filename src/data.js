@@ -2,15 +2,12 @@
 // All flood results are loaded at runtime from /public/data, produced by the
 // Python pipeline in /pipeline from real NASA inputs (see pipeline/README.md).
 
-export const CITY = {
-  id: 'sofia',
-  label: 'Sofia',
-  country: 'Bulgaria',
-  center: [23.326, 42.692],
-  zoom: 12.2,
-  pitch: 60,
-  bearing: -24,
+// Study areas. `base` is the folder in public/data written by the pipeline (REGION=...).
+export const REGIONS = {
+  sofia: { id: 'sofia', label: 'Sofia', country: 'Bulgaria', base: '', center: [23.326, 42.692], zoom: 12.2, pitch: 60, bearing: -24 },
+  pernik: { id: 'pernik', label: 'Pernik', country: 'Bulgaria', base: 'pernik/', center: [23.055, 42.59], zoom: 12.6, pitch: 58, bearing: -35 },
 };
+export const CITY = REGIONS.sofia;
 
 export const RISK = {
   critical: { label: 'Critical', color: '#F2594B' },

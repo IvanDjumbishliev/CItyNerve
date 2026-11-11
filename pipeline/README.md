@@ -46,3 +46,17 @@ Tunable assumptions are at the top of `model.py`. This is a screening model, not
 | `model_dambreak.py` | Full-supply level from the shoreline, synthetic bed scaled to 25.2 Mm³ and the 55 m wall, Sentinel-2 area → level → volume per date, breach width/time (Froehlich 2008), reference peak outflow (Froehlich 1995) |
 
 The flood itself is computed live in the browser (`src/dambreak.worker.js`): a local-inertial 2D shallow-water solver (Bates et al. 2010) on the 28 m grid, starting from the lake level of the selected period. Hypothetical scenario for emergency planning, not a prediction.
+
+## Regions
+
+The flood model runs per study area, selected with `REGION` (see `config.py`):
+
+| Region | Area | Rain point | Output |
+|---|---|---|---|
+| `sofia` (default) | 23.18–23.50 E, 42.60–42.78 N | 23.32 E, 42.69 N | `public/data/` |
+| `pernik` | 22.92–23.20 E, 42.50–42.68 N (city, Struma valley to Studena dam) | 23.04 E, 42.60 N | `public/data/pernik/` |
+
+```bash
+REGION=pernik pipeline/.venv/Scripts/python pipeline/model.py
+```
+`run_all.py` runs both regions. In the app, the Sofia / Pernik switch in the top bar changes map, storms, problem spots, register and data pages.

@@ -27,7 +27,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 from PIL import Image
 from scipy import ndimage
-from config import WORK, RAW, OUT, START_DATE, END_DATE, http_get
+from config import WORK, RAW, OUT, START_DATE, END_DATE, CITY, http_get
 
 SOFIA_TZ = ZoneInfo("Europe/Sofia")
 # ── tunable assumptions (documented in the UI) ──
@@ -631,7 +631,12 @@ def reverse_geocode(lat, lon, cache):
     a = cache[key]
     road = (a.get("road") or a.get("pedestrian") or a.get("square") or a.get("amenity") or a.get("industrial")
             or a.get("retail") or a.get("commercial") or a.get("neighbourhood") or a.get("hamlet") or "Unnamed street")
-    district = a.get("suburb") or a.get("quarter") or a.get("city_district") or a.get("neighbourhood") or a.get("village") or "Sofia"
+    district = a.get("suburb") or a.get("quarter") or a.get("city_district") or a.get("neighbourhood") or a.get("village") or CITY
+    import re
+    if re.fullmatch(r"[A-Za-z]{0,4}\s*\d+[A-Za-z]?", road.strip()):   # road reference such as "6", "603", "PER3124"
+        road = f"{district} · road {road.strip()}"
+    elif road == "Unnamed street":
+        road = f"{district} · unnamed street"
     return road, district
 
 

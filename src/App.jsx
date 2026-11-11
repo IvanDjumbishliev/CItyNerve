@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import HeatPage from "./HeatPage.jsx";
 import FloodMap from "./FloodMap.jsx";
-import { CITY, RISK, CAUSE, riskLevel, PIPELINE } from "./data.js";
+import { CITY, REGIONS, RISK, CAUSE, riskLevel, PIPELINE } from "./data.js";
 import { useFloodData } from "./useFloodData.js";
 import {
   loadDam,
@@ -857,6 +857,7 @@ function RiskPanel({
   open,
   setOpen,
   damSlot,
+  cityLabel = "Sofia",
 }) {
   const hs = selection?.kind === "hotspot" ? hotspots.find((h) => h.id === selection.id) : null;
   const cur = eventIdx >= 0 ? summary.events[eventIdx] : summary.max5y;
@@ -875,7 +876,7 @@ function RiskPanel({
           <div>
             <h2>Flood risk</h2>
             <span>
-              {eventIdx >= 0 ? `Storm of ${fmtDay(cur.start)}` : "Sofia · 5-year maximum"}
+              {eventIdx >= 0 ? `Storm of ${fmtDay(cur.start)}` : `${cityLabel} · 5-year maximum`}
             </span>
           </div>
         </div>
@@ -917,7 +918,16 @@ function RiskPanel({
 }
 
 /* ───────────── top bar ───────────── */
-function MapTopBar({ hotspots, onSearchPick, toggleDock, toggleLens, onDam, damReady }) {
+function MapTopBar({
+  hotspots,
+  onSearchPick,
+  toggleDock,
+  toggleLens,
+  onDam,
+  damReady,
+  region,
+  setRegion,
+}) {
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(false);
   const results = q
@@ -934,9 +944,22 @@ function MapTopBar({ hotspots, onSearchPick, toggleDock, toggleLens, onDam, damR
         <span className="brand-text">
           <strong>FloodNerve</strong>
           <small>
-            <MapPin size={10} /> {CITY.label}, BG
+            <MapPin size={10} /> {REGIONS[region].label}, BG
           </small>
         </span>
+      </div>
+      <div className="city-switch glass" role="tablist" aria-label="City">
+        {Object.values(REGIONS).map((r) => (
+          <button
+            key={r.id}
+            role="tab"
+            aria-selected={region === r.id}
+            className={region === r.id ? "is-on" : ""}
+            onClick={() => setRegion(r.id)}
+          >
+            {r.label}
+          </button>
+        ))}
       </div>
       <div className={`search glass ${focus ? "is-focus" : ""}`}>
         <Search size={15} />
@@ -991,7 +1014,7 @@ function MapTopBar({ hotspots, onSearchPick, toggleDock, toggleLens, onDam, damR
   );
 }
 
-function CameraControls({ map }) {
+function CameraControls({ map, view = CITY }) {
   const [is3d, set3d] = useState(true);
   if (!map) return null;
   return (
@@ -1006,7 +1029,7 @@ function CameraControls({ map }) {
         onClick={() => {
           const n = !is3d;
           set3d(n);
-          map.easeTo({ pitch: n ? CITY.pitch : 0, duration: 900 });
+          map.easeTo({ pitch: n ? view.pitch : 0, duration: 900 });
         }}
         aria-label="Toggle 3D"
         className="txt"
@@ -1017,10 +1040,10 @@ function CameraControls({ map }) {
         onClick={() => {
           set3d(true);
           map.flyTo({
-            center: CITY.center,
-            zoom: CITY.zoom,
-            pitch: CITY.pitch,
-            bearing: CITY.bearing,
+            center: view.center,
+            zoom: view.zoom,
+            pitch: view.pitch,
+            bearing: view.bearing,
             duration: 1600,
           });
         }}
@@ -1050,7 +1073,8 @@ function DataState({ loading, error }) {
 }
 
 /* ───────────── pages ───────────── */
-function MapPage({ data }) {
+function MapPage({ data, region, setRegion }) {
+  const view = REGIONS[region];
   const { summary, hotspots } = data;
   const [eventIdx, setEventIdx] = useState(-1);
   const [hour, setHour] = useState(0);
@@ -1133,8 +1157,22 @@ function MapPage({ data }) {
       });
   }, [selection, map]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // switching city: back to the 5-year view of that city
+  useEffect(() => {
+    setEventIdx(-1);
+    setSelection(null);
+    setPlaying(false);
+    map?.flyTo({
+      center: view.center,
+      zoom: view.zoom,
+      pitch: view.pitch,
+      bearing: view.bearing,
+      duration: 2400,
+    });
+  }, [region]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const factor = ev ? (ev.level[hour] ?? 0) : 1;
-  const png = summary ? (ev ? ev.png : summary.max5y.png) : null;
+  const png = summary ? data.base + (ev ? ev.png : summary.max5y.png) : null;
 
   const damLevel = dam ? levelOn(ev ? ev.start : null) : null;
   const periodLabel = ev ? `storm of ${fmtDay(ev.start)}` : "highest in 5 years";
@@ -1184,6 +1222,7 @@ function MapPage({ data }) {
         selectedId={selection?.id}
         onSelect={setSelection}
         onReady={setMap}
+        base={data.base}
         dam={dam}
         damFill={damLevel?.fill_pct}
         damActive={simActive}
@@ -1199,6 +1238,8 @@ function MapPage({ data }) {
           setSelection({ kind: "dam", id: "dam" });
           setLensOpen(true);
         }}
+        region={region}
+        setRegion={setRegion}
       />
       {summary ? (
         <>
@@ -1220,8 +1261,9 @@ function MapPage({ data }) {
             open={lensOpen}
             setOpen={setLensOpen}
             damSlot={damSlot}
+            cityLabel={view.label}
           />
-          <CameraControls map={map} />
+          <CameraControls map={map} view={view} />
           {simActive && dam ? (
             <DamHud
               stats={simStats}
@@ -1271,7 +1313,8 @@ function RegisterPage({ data }) {
     <div className="page">
       <header className="page-head">
         <span className="eyebrow">
-          Sofia · {fmtDay(summary.period.start)} – {fmtDay(summary.period.end)}
+          {REGIONS[data.region].label} · {fmtDay(summary.period.start)} –{" "}
+          {fmtDay(summary.period.end)}
         </span>
         <h1>Risk register</h1>
         <p>
@@ -1459,8 +1502,8 @@ function SourcesPage({ data }) {
         <h1>Data & model</h1>
         <p>
           Every number on the map comes from this chain: NASA satellite rain and lidar, terrain and
-          land cover, run through a transparent flood screening model for Sofia. Generated{" "}
-          {fmtDay(summary.generated)}.
+          land cover, run through a transparent flood screening model for{" "}
+          {REGIONS[data.region].label}. Generated {fmtDay(summary.generated)}.
         </p>
       </header>
       <ol className="pipeline">
@@ -1515,7 +1558,7 @@ function SourcesPage({ data }) {
         </li>
         <li>
           Storm-sewer capacity is assumed ({summary.model.sewer_mm_h} mm/h over built-up catchments,{" "}
-          {summary.model.ditch_mm_h} mm/h elsewhere); Sofia's real network is not public.
+          {summary.model.ditch_mm_h} mm/h elsewhere); the city's real network is not public.
         </li>
         <li>
           Rain intensity within a day comes from MERRA-2's hourly pattern, so short cloudbursts are
@@ -1537,12 +1580,13 @@ function SourcesPage({ data }) {
 
 export default function App() {
   const [page, setPage] = useState("map");
-  const data = useFloodData();
+  const [region, setRegion] = useState("sofia");
+  const data = useFloodData(region);
   return (
     <div className="shell">
       <Rail page={page} setPage={setPage} />
       <main className={`main main-${page}`}>
-        {page === "map" && <MapPage data={data} />}
+        {page === "map" && <MapPage data={data} region={region} setRegion={setRegion} />}
         {page === "register" && <RegisterPage data={data} />}
         {page === "sources" && <SourcesPage data={data} />}
         {page === "l-heat" && <HeatPage />}

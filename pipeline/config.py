@@ -1,17 +1,30 @@
-"""Shared settings for the FloodNerve Sofia data pipeline."""
+"""Shared settings for the FloodNerve data pipeline.
+
+Select the study area with the REGION environment variable (default: sofia):
+    REGION=pernik python fetch_dem.py
+"""
+import os
 from pathlib import Path
 from datetime import date, timedelta
 
 ROOT = Path(__file__).resolve().parent
-RAW = ROOT / "raw"            # downloaded source data (git-ignored)
-WORK = ROOT / "work"          # intermediate rasters (git-ignored)
-OUT = ROOT.parent / "public" / "data"   # files the web app loads
+REGIONS = {
+    # Sofia: the city, Vitosha foothills and the Iskar. Rain point = city centre.
+    "sofia": {"bbox": (23.18, 42.60, 23.50, 42.78), "center": (23.32, 42.69), "sub": "", "city": "Sofia"},
+    # Pernik: the city, the Struma valley up to Studena dam, Golo Bardo foothills.
+    "pernik": {"bbox": (22.92, 42.50, 23.20, 42.68), "center": (23.04, 42.60), "sub": "pernik", "city": "Pernik"},
+}
+REGION = os.environ.get("REGION", "sofia")
+_r = REGIONS[REGION]
+RAW = ROOT / "raw" / _r["sub"]         # downloaded source data (git-ignored)
+WORK = ROOT / "work" / _r["sub"]       # intermediate rasters (git-ignored)
+OUT = ROOT.parent / "public" / "data" / _r["sub"]   # files the web app loads
 for p in (RAW, WORK, OUT):
     p.mkdir(parents=True, exist_ok=True)
 
-# Sofia study area (lon/lat). Covers the city, Vitosha foothills and the Iskar.
-BBOX = (23.18, 42.60, 23.50, 42.78)   # west, south, east, north
-CENTER = (23.32, 42.69)
+BBOX = _r["bbox"]                      # west, south, east, north
+CENTER = _r["center"]
+CITY = _r["city"]
 
 # Terrain tiles zoom: z12 ≈ 28 m cells here, matching SRTM 1-arc-second (30 m) source data.
 DEM_ZOOM = 12

@@ -111,7 +111,9 @@ function circle([lng, lat], radius, steps = 40) {
   return [ring];
 }
 
-export default function FloodMap({ summary, hotspots, png, factor, layers, selectedId, onSelect, onReady, dam, damFill, damActive }) {
+export default function FloodMap({ summary, hotspots, png, factor, layers, selectedId, onSelect, onReady, dam, damFill, damActive, base = '' }) {
+  const baseRef = useRef(base);
+  baseRef.current = base;
   const box = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
@@ -153,8 +155,8 @@ export default function FloodMap({ summary, hotspots, png, factor, layers, selec
       try { map.setTerrain({ source: 'dem', exaggeration: 1.6 }); } catch (e) { /* terrain optional */ }
       try { map.setSky({ 'sky-color': '#0B1722', 'horizon-color': '#1A3447', 'fog-color': '#0C141C', 'sky-horizon-blend': 0.7, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.35 }); } catch (e) { /* older engines */ }
 
-      map.addSource('streams', { type: 'geojson', data: dataUrl('streams.geojson') });
-      map.addSource('icesat2', { type: 'geojson', data: dataUrl('icesat2.geojson') });
+      map.addSource('streams', { type: 'geojson', data: dataUrl(baseRef.current + 'streams.geojson') });
+      map.addSource('icesat2', { type: 'geojson', data: dataUrl(baseRef.current + 'icesat2.geojson') });
       map.addSource('ponds', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
 
       map.addLayer({ id: 'icesat2', type: 'circle', source: 'icesat2', layout: { visibility: 'none' },
@@ -202,7 +204,9 @@ export default function FloodMap({ summary, hotspots, png, factor, layers, selec
     const map = mapRef.current;
     if (!map || !summary) return;
     const attach = () => {
-      if (map.getSource('flood')) return;
+      if (map.getLayer('flood')) map.removeLayer('flood');          // region switched: new grid, new bounds
+      if (map.getSource('flood')) map.removeSource('flood');
+      raster.current.depth = null;
       const canvas = document.createElement('canvas');
       canvas.width = summary.grid.cols; canvas.height = summary.grid.rows;
       const drape = makeDrapeCanvas(summary.grid.bounds, canvas.width, canvas.height);
@@ -214,6 +218,14 @@ export default function FloodMap({ summary, hotspots, png, factor, layers, selec
     };
     if (loaded.current) attach(); else map.once('style.load', attach);
   }, [summary]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // region switch: river network and lidar tracks of the selected city
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded.current) return;
+    map.getSource('streams')?.setData(dataUrl(base + 'streams.geojson'));
+    map.getSource('icesat2')?.setData(dataUrl(base + 'icesat2.geojson'));
+  }, [base]);
 
   // load the depth PNG for the selected storm
   useEffect(() => {
