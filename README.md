@@ -73,3 +73,9 @@ Build CityNerve Core + AlertNerve first (shared events and incident database), t
 ## Safety
 
 This starter is not intended for safety-critical operations, official flood or fog warnings, or autonomous control of real infrastructure. Any physical-barrier demo should use a miniature model with local interlocks and an easily accessible power cut-off.
+
+### Parking availability
+
+Mobility uses operator-reported availability for six Sofia facilities and Basel-Stadt parking data (CC BY 4.0). Sofia supplies neither capacity nor measurement timestamps; its catalog leaves reuse licensing unspecified. Confirm operator reuse terms for public deployment. Basel records with impossible counts are omitted.
+
+Run npm run dev for development. For production run npm run build followed by npm start (Node 20+). PORT defaults to 3000. The Node server supplies the same /api/parking/{city} adapters used by Vite. A purely static deployment needs this API service behind the same origin. Responses are cached for 60 seconds; failed refreshes retain the last successful readings with a stale flag.
