@@ -33,6 +33,9 @@ DEM_ZOOM = 12
 END_DATE = date(2026, 11, 10)
 START_DATE = END_DATE - timedelta(days=5 * 365)
 
+# Fog catalogue threshold: METAR visibility is converted from statute miles to metres.
+FOG_VISIBILITY_M = 1000.0
+
 USER_AGENT = "FloodNerve-hackathon-prototype/0.1"
 
 

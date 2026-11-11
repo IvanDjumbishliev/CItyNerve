@@ -61,6 +61,7 @@ import {
   showMaxExtent,
   onStats,
 } from "./damSim.js";
+import FogNerve from "./FogNerve.jsx";
 import LegacyApp from "./legacy/LegacyApp.jsx";
 import "./legacy/legacy.css";
 
@@ -131,11 +132,19 @@ function Toggle({ on, onChange, icon: Icon, label, hint }) {
 /* ───────────── navigation rail ───────────── */
 const RAIL_GROUPS = [
   {
-    label: null,
+    label: "FloodNerve",
     items: [
       ["map", "Flood map", MapIcon],
       ["register", "Risk register", ListOrdered],
       ["sources", "Data & model", Satellite],
+    ],
+  },
+  {
+    label: "FogNerve",
+    items: [
+      ["fog-map", "Fog map", CloudFog],
+      ["fog-register", "Fog risk", ListOrdered],
+      ["fog-sources", "Fog data", Satellite],
     ],
   },
   {
@@ -144,7 +153,6 @@ const RAIL_GROUPS = [
       ["l-overview", "Overview", LayoutDashboard],
       ["l-incidents", "Incidents", Siren],
       ["l-flood", "Flood", RainIcon],
-      ["l-fog", "Fog", CloudFog],
       ["l-heat", "Heat", ThermometerSun],
       ["l-mobility", "Mobility", CarFront],
       ["l-alert", "Alerts", BellRing],
@@ -1590,8 +1598,12 @@ export default function App() {
         {page === "register" && <RegisterPage data={data} />}
         {page === "sources" && <SourcesPage data={data} />}
         {page === "l-heat" && <HeatPage />}
+        {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
         {page !== "l-heat" && page.startsWith("l-") && (
-          <LegacyApp page={page.slice(2)} setPage={(id) => setPage("l-" + id)} />
+          <LegacyApp
+            page={page.slice(2)}
+            setPage={(id) => setPage(id === "fog" ? "fog-map" : "l-" + id)}
+          />
         )}
       </main>
     </div>
