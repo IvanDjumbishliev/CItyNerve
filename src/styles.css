@@ -5024,3 +5024,371 @@ button {
     padding-inline: 6px;
   }
 }
+
+/* ───────── flood and fog live operations maps ───────── */
+.hazard-live {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0c141c;
+}
+.hazard-live-map {
+  position: absolute;
+  inset: 0;
+}
+.hazard-live-map .maplibregl-ctrl-bottom-right {
+  right: 24px;
+  bottom: 86px;
+}
+.hazard-live-topbar {
+  position: absolute;
+  z-index: 20;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+.hazard-live-topbar > * {
+  pointer-events: auto;
+}
+.hazard-live-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 150px;
+  height: 48px;
+  padding: 0 14px;
+}
+.hazard-live-brand strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.hazard-live-brand span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.hazard-live-topbar .module-tabs {
+  margin-left: auto;
+}
+.hazard-live-panel {
+  position: absolute;
+  z-index: 10;
+  top: 82px;
+  left: 16px;
+  width: min(340px, calc(100vw - 32px));
+  padding: 20px;
+}
+.hazard-live-panel h1 {
+  margin: 10px 0 16px;
+  font-family: var(--display);
+  font-size: 23px;
+  line-height: 1.15;
+}
+.hazard-live-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  font-size: 12px;
+}
+.hazard-live-status i,
+.hazard-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e8c547;
+  box-shadow: 0 0 0 4px rgba(232, 197, 71, 0.1);
+}
+.hazard-live-panel > p {
+  margin: 12px 0 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.hazard-live-separator {
+  height: 1px;
+  margin: 18px 0;
+  background: var(--line);
+}
+.hazard-live-reading {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 5px 12px;
+}
+.hazard-live-reading span,
+.hazard-live-reading small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.hazard-live-reading strong {
+  color: var(--live-accent);
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 500;
+}
+.hazard-live-reading small {
+  grid-column: 1 / -1;
+}
+.hazard-live-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--text-2);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+.hazard-live-source svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--live-accent);
+}
+.hazard-live-location {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 17px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.hazard-live-location svg {
+  color: var(--live-accent);
+}
+.hazard-live-error {
+  color: #ff978f !important;
+}
+.hazard-live-controls {
+  position: absolute;
+  z-index: 10;
+  right: 16px;
+  bottom: 92px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px;
+}
+.hazard-live-controls button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--text-2);
+}
+.hazard-live-controls button:hover {
+  background: var(--ink-3);
+  color: var(--text);
+}
+.hazard-live-controls button[aria-label="Toggle 3D view"] {
+  font-size: 11px;
+  font-weight: 700;
+}
+.hazard-live-footer {
+  position: absolute;
+  z-index: 10;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 34px;
+  padding: 0 12px;
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+.hazard-live-footer .hazard-live-dot {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+}
+.hazard-live-footer-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--line-2);
+}
+.hazard-live-fog {
+  --live-accent: #9cb8c7;
+}
+.hazard-live-flood {
+  --live-accent: #4fc3f7;
+}
+.hazard-live .hazard-history-panel {
+  position: absolute;
+  z-index: 12;
+  top: 82px;
+  right: 16px;
+  bottom: 160px;
+  width: 292px;
+  overflow: hidden;
+  padding: 14px 12px 10px;
+  display: flex;
+  flex-direction: column;
+}
+.hazard-history-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.hazard-history-heading h2 {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.hazard-history-heading > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.hazard-live .hazard-history-list {
+  max-height: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  margin: 8px 0 0;
+}
+.hazard-live .hazard-history-panel .storm {
+  min-height: 38px;
+  padding: 7px 8px;
+  font-size: 12px;
+}
+.hazard-live-fog .hazard-history-panel .storm.is-on {
+  background: rgba(156, 184, 199, 0.18);
+  box-shadow: inset 2px 0 #9cb8c7;
+  color: var(--text);
+}
+.hazard-live-fog .hazard-history-panel .storm.is-on .storm-meta {
+  color: #c4d6df;
+}
+.hazard-history-empty,
+.hazard-history-note {
+  margin: 10px 4px 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.hazard-history-note {
+  flex: 0 0 auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.hazard-live .hazard-history-timeline {
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  z-index: 14;
+}
+.hazard-live .hazard-history-timeline .tl-sub {
+  color: var(--text-2);
+}
+.hazard-live-fog .hazard-history-timeline .play {
+  background: #fff;
+  color: #111;
+  box-shadow: none;
+}
+.hazard-live-fog .hazard-history-timeline .tl-sub {
+  color: #b6c8d1;
+}
+.hazard-live-flood .hazard-history-timeline .play {
+  background: #4fc3f7;
+  color: #03121c;
+}
+.hazard-live-footer {
+  bottom: 160px;
+}
+
+@media (max-width: 860px) {
+  .hazard-live-topbar {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+  }
+  .hazard-live-brand {
+    height: 44px;
+    min-width: 126px;
+    padding: 0 10px;
+  }
+  .hazard-live-topbar .module-tabs {
+    position: absolute;
+    top: 52px;
+    left: 0;
+  }
+  .hazard-live-panel {
+    top: 118px;
+    left: 10px;
+    width: min(320px, calc(100vw - 20px));
+    padding: 15px;
+  }
+  .hazard-live .hazard-history-panel {
+    top: 482px;
+    left: 10px;
+    right: 10px;
+    bottom: 138px;
+    width: auto;
+    padding: 10px;
+  }
+  .hazard-live .hazard-history-list {
+    margin-top: 4px;
+  }
+  .hazard-live .hazard-history-panel .storm {
+    min-height: 32px;
+    padding-block: 4px;
+  }
+  .hazard-live .hazard-history-note {
+    display: none;
+  }
+  .hazard-live .hazard-history-timeline {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 9px 10px 7px;
+  }
+  .hazard-live .hazard-history-timeline .tl-head {
+    gap: 8px;
+    margin-bottom: 2px;
+  }
+  .hazard-live .hazard-history-timeline .tl-clock .big {
+    font-size: 12px;
+  }
+  .hazard-live .hazard-history-timeline .tl-sub,
+  .hazard-live .hazard-history-timeline .tl-reads {
+    font-size: 9px;
+  }
+  .hazard-live .hazard-history-timeline .play {
+    width: 30px;
+    height: 30px;
+  }
+  .hazard-live .hazard-history-timeline .tl-ticks {
+    font-size: 8px;
+  }
+  .hazard-live-footer {
+    display: none;
+  }
+  .hazard-live-panel h1 {
+    font-size: 20px;
+  }
+  .hazard-live-map .maplibregl-ctrl-bottom-right {
+    right: 10px;
+    bottom: 100px;
+  }
+  .hazard-live-controls {
+    right: 10px;
+    bottom: 100px;
+  }
+  .hazard-live-footer {
+    left: 10px;
+    bottom: 70px;
+    max-width: calc(100vw - 20px);
+    font-size: 8px;
+  }
+}

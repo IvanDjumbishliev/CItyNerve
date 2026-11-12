@@ -21,6 +21,12 @@ export const HAZARD_MODULES = [
       sources: 'sources',
       live: 'l-flood',
     },
+    liveView: {
+      headline: 'Live flood conditions',
+      status: 'No live flood sensors connected',
+      detail: 'The available flood catalogue is historical. Connect live rainfall and water-level stations before showing current flood conditions.',
+      accent: '#4FC3F7',
+    },
   },
   {
     id: 'fog',
@@ -32,6 +38,12 @@ export const HAZARD_MODULES = [
       register: 'fog-register',
       sources: 'fog-sources',
       live: 'l-fog',
+    },
+    liveView: {
+      headline: 'Live visibility conditions',
+      status: 'No live visibility feed connected',
+      detail: 'The available LBSF visibility catalogue is historical. Connect a live METAR or visibility sensor feed before showing current fog conditions.',
+      accent: '#9CB8C7',
     },
   },
   {

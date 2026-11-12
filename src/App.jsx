@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import MobilityPage from "./MobilityPage.jsx";
 import HeatPage from "./HeatPage.jsx";
+import HazardLivePage from "./HazardLivePage.jsx";
 import FloodMap from "./FloodMap.jsx";
 import {
   CITY,
@@ -1477,10 +1478,14 @@ export default function App() {
         {page === "register" && <RegisterPage data={data} onNavigate={setPage} />}
         {page === "sources" && <SourcesPage data={data} onNavigate={setPage} />}
         {page === "l-heat" && <HeatPage onNavigate={setPage} />}
+        {page === "l-flood" && <HazardLivePage moduleId="flood" onNavigate={setPage} />}
+        {page === "l-fog" && <HazardLivePage moduleId="fog" onNavigate={setPage} />}
         {page === "l-mobility" && <MobilityPage />}
         {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
         {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
-        {page !== "l-heat" && page !== "l-mobility" && page.startsWith("l-") && (
+        {page !== "l-heat" &&         page !== "l-flood" &&
+        page !== "l-fog" &&
+        page !== "l-mobility" && page.startsWith("l-") && (
           <LegacyApp page={page.slice(2)} onNavigateRoute={setPage} />
         )}
       </main>
