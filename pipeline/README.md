@@ -1,4 +1,4 @@
-# FloodNerve & FogNerve data pipelines (Sofia)
+# FloodNerve, FogNerve & AirNerve data pipelines (Sofia)
 
 Downloads real data and runs the flood screening model. Output goes to `public/data/`, which the web app loads.
 
@@ -66,6 +66,50 @@ Tunable assumptions are at the top of `model.py` and `fog_model.py`; the observe
 5. **Exposure:** sample available OSM major-road geometry against event probability to rank road hotspots and estimate sampled road length. If Overpass endpoints cannot be reached, hotspot and road-length fields remain unavailable/null (not zero). OSM features use their mapped road names; no unsupported exposures are invented.
 
 The verified no-key data endpoints are IEM's ASOS request endpoint, Open-Meteo's archive endpoint, and NASA POWER's hourly endpoint for the listed parameters. Overpass availability can vary by network and server load. A satellite validation layer was not implemented because no suitable free no-key event endpoint was verified. The app remains usable without the optional OSM exposure source and shows its unavailable status. The fog product is a screening prototype, not an official fog warning or for safety-critical use.
+
+## AirNerve air-quality pipeline (Sofia)
+
+```bash
+npm run data:air          # or: pipeline/.venv/Scripts/python pipeline/run_air.py
+```
+
+Needs the same virtual environment plus `pyarrow` (in `requirements.txt`) for the EEA reference files. A first run downloads about 60 MB and takes roughly 15 minutes, most of it the citizen-sensor archive and Overpass. Reruns use the cache in `pipeline/raw/air/`. The Live view (`/api/air`) needs none of this: it reads the same sources directly through the Node server.
+
+| Script | Data | Provider |
+|---|---|---|
+| `fetch_air_inputs.py` | Hourly PM2.5, PM10, NO₂, O₃, SO₂ on the 0.1° lattice over `BBOX`; ERA5 10 m wind and humidity on the same lattice; a sample of citizen-sensor daily archive files; official station hourly PM2.5/PM10 | CAMS Europe via Open-Meteo; ERA5 via Open-Meteo archive; Sensor.Community archive; EEA Air Quality Download Service |
+| `fetch_air_sites.py` | Schools, kindergartens, hospitals, clinics and care homes for Sofia and every Live-view town | OpenStreetMap via Overpass (same mirrors as `fetch_fog_roads.py`; a town's file is not written if all mirrors fail) |
+| `air_model.py` | Episodes, yearly exceedance counts, local-factor and confidence rasters, validation, hotspots, risk register | Derived screening model |
+| `run_air.py` | Runs the three steps in order | Local orchestration |
+
+Outputs in `public/data/`: `air_summary.json`, `air_events.json`, `air_hotspots.json`, `air_risk_register.json`, `air_sites.geojson` (plus `air_sites_<town>.geojson`), `air_local_factor.png`, `air_confidence.png`. Missing values are `null`, never 0.
+
+### Air model (`air_model.py`)
+
+All thresholds sit in one table at the top of the script, each with its source: WHO global air quality guidelines 2021 (Table 3.26 AQG levels: PM2.5 15 / 5, PM10 45 / 15, NO₂ 25 / 10 µg/m³ for 24 h / annual), the Directive 2008/50/EC limit values as listed by the European Commission (PM10 50 µg/m³ daily with 35 days allowed and 40 annual; PM2.5 25 annual; NO₂ 40 annual) and the European Air Quality Index bands from airindex.eea.europa.eu. The revised Directive (EU) 2024/2881 sets stricter 2030 values; they are not used here.
+
+1. **Episodes:** CAMS PM2.5 at the city centre (bilinear on the lattice), 24-hour means of local calendar days (at least 18 hours). An episode is a run of consecutive days above the WHO 24-hour guideline. The worst 12 by total excess are kept, each with up to 7 days of hourly lattice values and wind for playback. Cause hints appear only when the data show them: winter evening peaks at least 1.5× midday (heating) or mean wind below 2 m/s (stagnation).
+2. **Yearly counts:** days above the WHO PM2.5 / PM10 / NO₂ 24-hour guidelines and above the EU PM10 daily limit, plus annual means, per calendar year. Partial years are flagged. These are model counts, not a compliance assessment.
+3. **Sensor screening:** sample nodes are today's outdoor Sofia nodes (15 km) that have their own humidity sensor at the same location id. Rules: drop indoor nodes; drop PM2.5 outside 0–999.9 µg/m³ (SDS011 range) or above PM10 + 1; drop runs of 6 or more identical PM2.5 readings (stuck); discard every reading taken above 85% relative humidity (node humidity, or ERA5 humidity if the node has none) because optical counters count droplets as particles; hourly medians need 3 or more readings; a sensor needs 48 or more hours.
+4. **Local factor (~250 m grid):** per sensor, the median of log((sensor+1)/(CAMS+1)) at the same hours. The city median is subtracted so the factor only redistributes CAMS in space and keeps its level. A Gaussian kernel (σ 1.5 km) interpolates the residuals; the result is shrunk towards 1 where few sensors are near and is exactly 1 (CAMS only) with fewer than 3 sensors within 2 km. `air_confidence.png` stores that confidence (0–1); the map hatches cells below 0.34.
+5. **Validation (in `air_summary.json`):** leave-one-sensor-out (factor rebuilt without the sensor, then CAMS × factor against its hourly medians: MAE, bias, r) next to CAMS alone against the same sensors; and an independent check against the official EEA stations (daily means, CAMS at the city centre and the city-wide sensor median). The EEA metadata has no coordinates for these Bulgarian stations, so the comparison is city-scale. Station times are converted from the reported UTC+01.
+6. **Hotspots and register:** only sensor-informed cells (confidence ≥ 0.34) are ranked: 60% rank of long-term mean PM2.5, 25% rank of WHO exceedance days, 15% sensitive sites within 500 m (capped at 10), at least 800 m apart, named with Nominatim (cached, one request per second).
+
+### Verified air endpoints (2026-11-12, no keys, real requests)
+
+| Endpoint | Finding |
+|---|---|
+| `air-quality-api.open-meteo.com/v1/air-quality` (`domains=cams_europe`) | Multi-point requests work (comma-separated lists, snapped to the 0.1° grid). History from 2013-01-01; earlier start dates are rejected. Forecast values stop about 4 days ahead. CORS `*`. Free tier is non-commercial: under 10,000 calls/day, 5,000/hour, 600/minute. Open-Meteo documents the series as CAMS forecasts from October 2023 and the CAMS reanalysis before. |
+| `api.open-meteo.com/v1/forecast`, `archive-api.open-meteo.com/v1/archive` | 10 m wind (m/s, direction it blows from) and humidity, multi-point. |
+| `data.sensor.community/airrohr/v1/filter/area=lat,lon,km` | Last 5 minutes only. Values are strings, `location.indoor` is 0/1, several records per sensor, humidity sensors share the PM sensor's `location.id`. Sofia: 288 outdoor PM nodes within 15 km, 228 with humidity. Slovak towns: Bratislava 9, Žilina 3, the others 1 each. CORS `*`. Polled at most every 5 minutes with the project User-Agent. |
+| `archive.sensor.community/<day>/` and `/<year>/<day>/` | One semicolon-separated CSV per sensor and day (~36 KB). The current year sits at the root, earlier years under the year folder. The server slows sharply with 4 parallel requests; 2 keep-alive workers give about 80 files a minute. |
+| EEA `ParquetFile/urls` (dataset 1) and `metadata.csv` | Returns Sofia PM2.5 / PM10 station Parquet files (~400 KB each). BG0050A is urban background (581 m); BG0070A is rural near-city (1,321 m). Bulgarian rows in the metadata have no coordinates; time zone UTC+01. Dataset 2 (verified data) returned no Sofia files. |
+| Overpass (`overpass-api.de`) | 941 sensitive sites in Sofia's box in 38 s. Both other mirrors timed out at 90 s on the same day. |
+| Planetary Computer `sentinel-5p-l2-netcdf` | Search and the no-key SAS token work, but each NO₂ granule is about 66 MB. A multi-month regional mean would need over 1 GB and a NetCDF stack, so the optional satellite layer was **skipped**. |
+
+### Air limits
+
+CAMS is an ~11 km model and cannot resolve streets. The local factor is static (from 8 sample days in winter and summer 2026) and only redistributes the model using today's sensors; it cannot add sources the model misses. Citizen sensors are indicative and read differently from reference monitors. Areas with no sensors are unknown, not clean. The validation uses the same kind of sensors the factor is built from, plus official stations compared at city scale. This is a screening estimate, not an official air-quality assessment or a health warning.
 
 ## Pernik · Studena dam-break scenario
 

@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
 import { parkingMiddleware } from "./parking.js";
+import { airMiddleware } from "./air.js";
 const root = resolve("dist");
 const types = {
   ".html": "text/html",
@@ -11,8 +12,10 @@ const types = {
   ".png": "image/png",
   ".geojson": "application/geo+json",
 };
+const api = (req, res, next) =>
+  parkingMiddleware(req, res, () => airMiddleware(req, res, next));
 createServer((req, res) =>
-  parkingMiddleware(req, res, async () => {
+  api(req, res, async () => {
     try {
       const path = resolve(
         root,

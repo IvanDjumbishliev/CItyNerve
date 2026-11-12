@@ -40,6 +40,7 @@ import {
   Timer,
   Home,
   Maximize2,
+  Wind,
 } from "lucide-react";
 import MobilityPage from "./MobilityPage.jsx";
 import HeatPage from "./HeatPage.jsx";
@@ -69,6 +70,8 @@ import {
 } from "./damSim.js";
 import FogNerve from "./FogNerve.jsx";
 import HeatNerve from "./HeatNerve.jsx";
+import AirNerve from "./AirNerve.jsx";
+import AirPage from "./AirPage.jsx";
 import LegacyApp from "./legacy/LegacyApp.jsx";
 import ModuleTabs from "./ModuleTabs.jsx";
 import "./legacy/legacy.css";
@@ -138,7 +141,7 @@ function Toggle({ on, onChange, icon: Icon, label, hint }) {
 }
 
 /* ───────────── navigation rail ───────────── */
-const HAZARD_ICONS = { flood: RainIcon, fog: CloudFog, heat: ThermometerSun };
+const HAZARD_ICONS = { flood: RainIcon, fog: CloudFog, heat: ThermometerSun, air: Wind };
 const RAIL_GROUPS = [
   {
     items: [
@@ -1480,11 +1483,14 @@ export default function App() {
         {page === "l-heat" && <HeatPage onNavigate={setPage} />}
         {page === "l-flood" && <HazardLivePage moduleId="flood" onNavigate={setPage} />}
         {page === "l-fog" && <HazardLivePage moduleId="fog" onNavigate={setPage} />}
+        {page === "l-air" && <AirPage onNavigate={setPage} />}
+        {page.startsWith("air-") && <AirNerve page={page} onNavigate={setPage} />}
         {page === "l-mobility" && <MobilityPage />}
         {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
         {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
         {page !== "l-heat" &&         page !== "l-flood" &&
         page !== "l-fog" &&
+        page !== "l-air" &&
         page !== "l-mobility" && page.startsWith("l-") && (
           <LegacyApp page={page.slice(2)} onNavigateRoute={setPage} />
         )}

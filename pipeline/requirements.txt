@@ -7,3 +7,4 @@ sliderule
 tzdata
 shapely
 pypdf
+pyarrow

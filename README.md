@@ -2,9 +2,9 @@
 
 # CityNerve
 
-### One city. Four ways to understand it.
+### One city. Five ways to understand it.
 
-**See flood risk. Understand fog. Find urban heat. Check available parking.**
+**See flood risk. Understand fog. Find urban heat. Track air pollution. Check available parking.**
 
 A visual city dashboard that brings Earth observation, weather records, building geometry, and parking feeds onto interactive maps.
 
@@ -34,6 +34,7 @@ It is built for curious residents, students, researchers, and city teams explori
 | **FloodNerve** | 3D terrain, storm playback, modeled flood depths, hotspots, and a risk register | Terrain, rainfall, soil wetness, land cover, and space lidar |
 | **FogNerve** | Recorded fog episodes, playback, terrain-proneness maps, and risk summaries | Airport observations, weather reanalysis, terrain, and land cover |
 | **HeatNerve** | Summer surface heat, named hotspots, possible cooling actions, and building shadows | Landsat thermal imagery, vegetation and albedo, lidar, and building geometry |
+| **AirNerve** | Live air-quality map with forecast, citizen sensors, wind, exposed schools and hospitals, pollution episodes, and a risk register | CAMS air-quality model, Sensor.Community citizen sensors, EEA monitoring stations, ERA5 wind, and OpenStreetMap sites |
 | **Mobility** | Parking maps, facility search, available-space sorting, and provider freshness | Public parking-provider feeds |
 
 ### Flood - follow the storm
@@ -59,6 +60,12 @@ Heat analysis shows places where roofs, roads, and paved ground are hotter than 
 ![Heat Live view showing buildings, shade controls, and the selected city](docs/screenshots/shadows.png)
 
 Satellite heat analysis and the building-shadow explorer have different coverage. Selecting another town for shadows does not create a new Landsat heat dataset for that town.
+
+### Air - see where and when the air is unhealthy
+
+The Air Live view shows the last 48 hours and the forecast for Sofia and seven Slovak towns, coloured with the official European Air Quality Index bands. Citizen sensors appear on the same scale (click one for its last 24 hours), wind arrows show where pollution moves, and the side panel lists the schools, kindergartens, hospitals and care homes in poor air at the selected hour. Analysis replays the worst pollution episodes of the last five years and ranks neighbourhoods where enough sensors exist.
+
+Measured values (sensors), modelled values (CAMS) and our derived screening surface are labelled separately. The result is a screening estimate, not an official air-quality assessment or a health warning.
 
 ### Mobility - find a space, not another spreadsheet
 
@@ -121,6 +128,7 @@ Then run the datasets you need:
 | `npm run data` | Generate the flood and fog analysis datasets |
 | `npm run data:fog` | Generate fog inputs and model outputs |
 | `npm run data:heat` | Generate heat inputs and model outputs |
+| `npm run data:air` | Generate air-quality history, sensor factor, validation, sites and hotspots |
 
 Downloads and processing can take time. See the [pipeline guide](pipeline/README.md) for inputs, methods, and configuration.
 
@@ -132,6 +140,7 @@ Downloads and processing can take time. See the [pipeline guide](pipeline/README
 | --- | --- | --- |
 | Flood | NASA/NGA SRTM terrain, ICESat-2 lidar, GPM IMERG rainfall, MERRA-2 weather and soil wetness, ESA WorldCover | Flood depths are screening-model estimates. Sewer capacity is assumed and the terrain grid is about 28 m. Curbs and narrow underpasses are not resolved. |
 | Fog | Iowa Environmental Mesonet METAR observations at Sofia Airport, ERA5 via Open-Meteo, NASA POWER weather, terrain and land cover | Airport events are observations. The city-wide terrain layer is modeled proneness, not measured visibility on every street. |
+| Air | CAMS European air-quality model via Open-Meteo, Sensor.Community citizen sensors, EEA official stations, ERA5 wind, OpenStreetMap sites | CAMS is a model at about 11 km. Citizen sensors are indicative, not reference-grade. The fused surface is a screening estimate validated against the sensors and one official station. |
 | Heat | Landsat 8/9 surface temperature and reflectance via Microsoft Planetary Computer, GEDI and ICESat-2 lidar via SlideRule, NASA POWER weather | Landsat measures surface temperature near its daytime overpass, not the air temperature felt by a pedestrian. Cooling estimates are statistical associations. |
 | Shadows | Building footprints and heights, SunCalc solar position | Shadows depend on the completeness of building geometry and height data. They do not measure local air temperature. |
 | Parking | Supported public operator feeds | Availability reflects the provider's last report. Capacity, timestamps, and coverage vary by city. |
@@ -161,16 +170,16 @@ shared/              Shared city and provider configuration
 server/              Parking adapters, caching, and production HTTP server
 pipeline/            Environmental data downloads and screening models
 public/data/         Generated datasets consumed by the app
-tests/               Heat geometry and parking adapter checks
+tests/               Heat geometry, parking adapter and air-quality logic checks
 docs/screenshots/    Real app captures used in this README
 ```
 
-The frontend uses **React 18**, **Vite 6**, **MapLibre GL**, and **Lucide**. Python pipelines prepare environmental datasets; the Node backend provides `/api/parking/{city}` in development and production.
+The frontend uses **React 18**, **Vite 6**, **MapLibre GL**, and **Lucide**. Python pipelines prepare environmental datasets; the Node backend provides `/api/parking/{city}` and `/api/air?town={id}` in development and production.
 
 Run the existing checks:
 
 ```bash
-node --test tests/*.test.js
+npm test
 npm run build
 ```
 
