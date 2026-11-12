@@ -13,29 +13,34 @@ export default function ModuleTabs({ module, route, onNavigate }) {
     : module;
   if (!activeModule) return null;
 
-  const live = route === activeModule.routes.live;
+  const supportsLive = Boolean(activeModule.routes.live);
+  const live = supportsLive && route === activeModule.routes.live;
   const activeTab = ANALYSIS_TABS.find(([key]) => activeModule.routes[key] === route)?.[0];
   return (
     <nav className="module-tabs" aria-label={`${activeModule.name} views`}>
-      <div className="module-mode" role="group" aria-label="View mode">
-        <button
-          type="button"
-          className={!live ? 'is-active' : ''}
-          aria-pressed={!live}
-          onClick={() => onNavigate(activeTab ? route : activeModule.routes.map)}
-        >
-          Analysis
-        </button>
-        <button
-          type="button"
-          className={live ? 'is-active' : ''}
-          aria-pressed={live}
-          onClick={() => onNavigate(activeModule.routes.live)}
-        >
-          Live
-        </button>
-      </div>
-      <span className="module-tabs-divider" aria-hidden="true" />
+      {supportsLive && (
+        <>
+          <div className="module-mode" role="group" aria-label="View mode">
+            <button
+              type="button"
+              className={!live ? 'is-active' : ''}
+              aria-pressed={!live}
+              onClick={() => onNavigate(activeTab ? route : activeModule.routes.map)}
+            >
+              Analysis
+            </button>
+            <button
+              type="button"
+              className={live ? 'is-active' : ''}
+              aria-pressed={live}
+              onClick={() => onNavigate(activeModule.routes.live)}
+            >
+              Live
+            </button>
+          </div>
+          <span className="module-tabs-divider" aria-hidden="true" />
+        </>
+      )}
       {ANALYSIS_TABS.map(([key, label]) => (
         <button
           type="button"

@@ -38,6 +38,8 @@ import {
   Settings2,
   PanelLeftClose,
   PanelLeftOpen,
+  Sun,
+  Moon,
   Zap,
   Square,
   Timer,
@@ -48,7 +50,6 @@ import MobilityPage from "./MobilityPage.jsx";
 import OperationsPage from "./operations/OperationsPage.jsx";
 import { useOperations } from "./operations/useOperations.js";
 import HeatPage from "./HeatPage.jsx";
-import HazardLivePage from "./HazardLivePage.jsx";
 import FloodMap from "./FloodMap.jsx";
 import {
   CITY,
@@ -161,7 +162,7 @@ const RAIL_GROUPS = [
   },
 ];
 
-function Rail({ page, setPage, expanded, setExpanded }) {
+function Rail({ page, setPage, expanded, setExpanded, theme, onToggleTheme }) {
   const activeModule = getHazardModuleForRoute(page);
   const activeId = activeModule?.routes.map ?? page;
   return (
@@ -201,6 +202,17 @@ function Rail({ page, setPage, expanded, setExpanded }) {
           </div>
         ))}
       </div>
+      <button
+        type="button"
+        className="rail-btn rail-theme"
+        onClick={onToggleTheme}
+        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+        aria-pressed={theme === "light"}
+        title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+      >
+        {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
+        <span>{theme === "dark" ? "Light theme" : "Dark theme"}</span>
+      </button>
       <button
         type="button"
         className={`rail-btn rail-settings ${page === "l-settings" ? "is-active" : ""}`}
@@ -1470,22 +1482,48 @@ function SourcesPage({ data, onNavigate }) {
 }
 
 export default function App() {
-  const [page, setPage] = useState(() =>
-    ["l-overview", "l-devices"].includes(window.location.hash.slice(1))
-      ? "operations"
-      : window.location.hash.slice(1) || "operations",
-  ); // e.g. #heat-map
+  const [theme, setTheme] = useState(() => {
+    try {
+      return window.localStorage.getItem("floodnerve-theme") === "light" ? "light" : "dark";
+    } catch (error) {
+      console.warn("Could not load the saved theme preference.", error);
+      return "dark";
+    }
+  });
+  const [page, setPage] = useState(() => {
+    const initialRoute = window.location.hash.slice(1);
+    if (["l-overview", "l-devices", "l-flood"].includes(initialRoute)) {
+      return "operations";
+    }
+    if (initialRoute === "l-fog") return "fog-map";
+    return initialRoute || "operations";
+  }); // e.g. #heat-map
   const [region, setRegion] = useState("sofia");
   const [railExpanded, setRailExpanded] = useState(false);
   const operations = useOperations();
   const operationalPages = ["operations", "l-incidents", "ops-parking", "l-alert"];
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      window.localStorage.setItem("floodnerve-theme", theme);
+    } catch (error) {
+      console.warn("Could not save the theme preference.", error);
+    }
+  }, [theme]);
   useEffect(() => { if (["sofia", "pernik"].includes(operations.city.id)) setRegion(operations.city.id); }, [operations.city.id]);
   const changeRegion = id => { setRegion(id); const c = REGIONS[id]; operations.selectCity({id, label:c.label, country:c.country, latitude:c.center[1], longitude:c.center[0]}); };
   const navigateOperations = id => setPage(id === "l-mobility" ? "ops-parking" : id);
   const data = useFloodData(region);
   return (
     <div className={`shell ${railExpanded ? "rail-expanded" : ""}`}>
-      <Rail page={page} setPage={setPage} expanded={railExpanded} setExpanded={setRailExpanded} />
+      <Rail
+        page={page}
+        setPage={setPage}
+        expanded={railExpanded}
+        setExpanded={setRailExpanded}
+        theme={theme}
+        onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+      />
       <main className={`main main-${page}`}>
         {operationalPages.includes(page) && <OperationsPage key={page} op={operations} page={page === "ops-parking" ? "l-mobility" : page} onNavigate={navigateOperations} />}
         {page === "map" && (
@@ -1501,14 +1539,12 @@ export default function App() {
         {page === "register" && <RegisterPage data={data} onNavigate={setPage} />}
         {page === "sources" && <SourcesPage data={data} onNavigate={setPage} />}
         {page === "l-heat" && <HeatPage onNavigate={setPage} />}
-        {page === "l-flood" && <HazardLivePage moduleId="flood" onNavigate={setPage} />}
-        {page === "l-fog" && <HazardLivePage moduleId="fog" onNavigate={setPage} />}
         {page === "l-mobility" && <MobilityPage />}
         {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
         {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
         {page !== "l-heat" &&         page !== "l-flood" &&
         page !== "l-fog" &&
-        page !== "l-mobility" && !operationalPages.includes(page) && page.startsWith("l-") && (
+        page !== "l-mobility" && page.startsWith("l-") && (
           <LegacyApp page={page.slice(2)} onNavigateRoute={setPage} />
         )}
       </main>
