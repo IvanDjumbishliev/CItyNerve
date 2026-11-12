@@ -37,7 +37,7 @@ test('boards ignore draft, expired, distant and other-city incidents', () => {
   }
 });
 test('published closures take precedence and expiry restores parking', () => {
-  const parking = [{ id: 'p', name: 'Public lot', simulated: true, capacity: 50, occupied: 40 }];
+  const parking = [{ ...city, cityId: city.id, id: 'p', name: 'Public lot', simulated: true, capacity: 50, occupied: 40 }];
   const b = { ...board, parkingId: 'p' };
   const closure = { ...event, id: 'closure', type: 'closure', message: 'ROAD CLOSED' };
   assert.equal(boardMessage(b, [event, closure], parking, now).message, 'ROAD CLOSED');

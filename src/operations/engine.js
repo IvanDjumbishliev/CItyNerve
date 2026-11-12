@@ -29,13 +29,32 @@ export function reconcileForecast(previous, events, cityId, now = Date.now()) {
   return [...events.map(e => { const old = previous.find(x => x.id === e.id); return { ...e, createdAt: old?.createdAt ?? e.observedAt }; }), ...previous.filter(e => !ids.has(e.id)).map(e => e.cityId === cityId && e.evidence === 'forecast' && e.status === 'published' ? { ...e, status: 'resolved', resolvedAt: new Date(now).toISOString() } : e)].slice(0, 200);
 }
 export const isActive = (event, now = Date.now()) => event.status === 'published' && Date.parse(event.expiresAt) > now;
+export function bearingDegrees(a, b) {
+  const rad = x => x * Math.PI / 180;
+  const lat1 = rad(a.latitude), lat2 = rad(b.latitude), delta = rad(b.longitude - a.longitude);
+  return (Math.atan2(Math.sin(delta) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(delta)) * 180 / Math.PI + 360) % 360;
+}
+// Straight-line demonstration geometry, not a road routing or lane model.
+export function pointAhead(board, km = .7) {
+  const angle = board.heading * Math.PI / 180;
+  return { latitude: board.latitude + Math.cos(angle) * km / 111.195, longitude: board.longitude + Math.sin(angle) * km / (111.195 * Math.cos(board.latitude * Math.PI / 180)) };
+}
+export function isAhead(board, point, rangeKm = board.rangeKm ?? 3) {
+  const distance = distanceKm(board, point);
+  if (distance > rangeKm) return false;
+  if (!Number.isFinite(board.heading) || distance < .08) return true;
+  const difference = Math.abs(((bearingDegrees(board, point) - board.heading + 540) % 360) - 180);
+  return difference <= (board.halfAngle ?? 40);
+}
 export function boardMessage(board, incidents, parking, now = Date.now()) {
   const ranks = { closure: 4, flood: 3, fog: 2, heat: 1 };
-  const incident = incidents.filter(e => e.cityId === board.cityId && isActive(e, now) && distanceKm(board, e) <= e.radiusKm).sort((a, b) => (ranks[b.type] ?? 0) - (ranks[a.type] ?? 0))[0];
+  const incident = incidents.filter(e => e.cityId === board.cityId && isActive(e, now) && distanceKm(board, e) <= e.radiusKm && (e.evidence === 'forecast' || isAhead(board, e)))
+    .sort((a, b) => (ranks[b.type] ?? 0) - (ranks[a.type] ?? 0) || Number(a.evidence === 'forecast') - Number(b.evidence === 'forecast') || distanceKm(board, a) - distanceKm(board, b))[0];
   if (incident) return { message: incident.message, incident, evidence: incident.evidence, source: incident.source };
-  const p = parking.find(x => x.id === board.parkingId);
-  if (p?.simulated && Number.isFinite(p.capacity)) return { message: `${p.name}\n${Math.max(0, p.capacity - p.occupied)} SPACES · SIMULATED`, evidence: 'simulation', source: 'Parking simulator' };
-  return { message: 'CITY INFORMATION\nNO ACTIVE LOCAL ADVISORY', evidence: 'routine', source: 'CityNerve' };
+  const p = parking.filter(x => x.cityId === board.cityId && x.simulated && Number.isFinite(x.capacity) && isAhead(board, x, board.parkingRangeKm ?? 1.5) && !incidents.some(e => e.cityId === board.cityId && e.type === 'closure' && e.parkingId === x.id && isActive(e, now)))
+    .sort((a, b) => distanceKm(board, a) - distanceKm(board, b))[0];
+  if (p) return { message: `${p.name}\n${Math.max(0, p.capacity - p.occupied)} SPACES · SIMULATED`, evidence: 'simulation', source: 'Nearby parking demo', parking: p };
+  return { message: board.routineMessage ?? 'CITY INFORMATION\nNO ACTIVE LOCAL ADVISORY', evidence: 'routine', source: 'CityNerve' };
 }
 export function normalizeParking(elements) {
   return elements.filter(e => e.tags?.amenity === 'parking' && !['private', 'no', 'customers', 'permit'].includes(e.tags.access)).map(e => {
