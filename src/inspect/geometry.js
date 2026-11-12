@@ -56,3 +56,16 @@ export function readSelection(hash) {
     return null;
   return { point, cityId: params.get("city") || "sofia", name: "Selected place" };
 }
+
+export function readInspectionTime(hash) {
+  const params = new URLSearchParams(hash.split("?")[1] || "");
+  const day = params.get("day");
+  const hour = Number(params.get("hour") ?? 15);
+  return {
+    day:
+      /^\d{4}-\d{2}-\d{2}$/.test(day || "") && Number.isFinite(Date.parse(day))
+        ? day
+        : "2026-07-15",
+    hour: Number.isFinite(hour) && hour >= 0 && hour <= 23.5 ? hour : 15,
+  };
+}
