@@ -39,7 +39,7 @@ function FogDataState({ loading, error }) {
   </div>;
 }
 
-function FogTimeline({ event, hour, setHour, playing, setPlaying, summary }) {
+export function FogTimeline({ event, hour, setHour, playing, setPlaying, summary }) {
   const series = event?.hourly ?? [];
   const count = series.length;
   const W = 480, H = 74;
@@ -239,7 +239,6 @@ function FogMapPage({ data, onNavigate }) {
       <button onClick={() => map.easeTo({ pitch: map.getPitch() ? 0 : 60, duration: 700 })} aria-label="Toggle 3D" className="txt">3D</button>
       <button onClick={() => map.flyTo({ center: [23.326, 42.692], zoom: 12.2, pitch: 60, bearing: -24, duration: 1000 })} aria-label="Reset map"><RotateCcw size={15} /></button>
     </div>}
-    <FogTimeline event={event} hour={hour} setHour={setHour} playing={playing} setPlaying={setPlaying} summary={summary} />
   </div>;
 }
 

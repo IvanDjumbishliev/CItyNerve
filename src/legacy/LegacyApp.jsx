@@ -13,6 +13,7 @@ import {
 import { CITIES, MODULES } from "./legacyData.js";
 import { HAZARD_MODULES } from "../data.js";
 import ModuleTabs from "../ModuleTabs.jsx";
+import LiveHazardTimeline from "../LiveHazardTimeline.jsx";
 const ICONS = { flood: Waves, fog: CloudFog, heat: ThermometerSun, mobility: CarFront };
 const MODULE_KEYS = Object.keys(ICONS);
 function Tag({ children, variant = "neutral" }) {
@@ -202,6 +203,11 @@ function ModulePage({ type, city }) {
           </div>
         </section>
       </div>
+      {(type === "flood" || type === "fog") && (
+        <div className="live-timeline-host">
+          <LiveHazardTimeline type={type} />
+        </div>
+      )}
     </>
   );
 }

@@ -5024,3 +5024,57 @@ button {
     padding-inline: 6px;
   }
 }
+
+.legacy .live-timeline-host {
+  margin: 20px 0 0;
+  min-width: 0;
+}
+.legacy .live-hazard-timeline {
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  width: 100%;
+  animation: none;
+}
+.live-timeline-wrap {
+  display: grid;
+  gap: 8px;
+}
+.live-event-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: 100%;
+  color: var(--text-2);
+  font-size: 11px;
+}
+.live-event-select select {
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--ink-1);
+  color: var(--text);
+}
+.live-timeline-state {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .legacy .live-hazard-timeline {
+    padding: 10px;
+  }
+  .legacy .live-hazard-timeline .tl-head {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .legacy .live-hazard-timeline .tl-reads {
+    margin-left: auto;
+  }
+  .live-event-select select {
+    max-width: 210px;
+  }
+}
