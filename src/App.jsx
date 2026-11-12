@@ -32,6 +32,9 @@ import {
   CloudFog,
   ThermometerSun,
   CarFront,
+  LayoutDashboard,
+  Siren,
+  BellRing,
   Settings2,
   PanelLeftClose,
   PanelLeftOpen,
@@ -42,6 +45,8 @@ import {
   Maximize2,
 } from "lucide-react";
 import MobilityPage from "./MobilityPage.jsx";
+import OperationsPage from "./operations/OperationsPage.jsx";
+import { useOperations } from "./operations/useOperations.js";
 import HeatPage from "./HeatPage.jsx";
 import HazardLivePage from "./HazardLivePage.jsx";
 import FloodMap from "./FloodMap.jsx";
@@ -142,12 +147,16 @@ const HAZARD_ICONS = { flood: RainIcon, fog: CloudFog, heat: ThermometerSun };
 const RAIL_GROUPS = [
   {
     items: [
+      ["operations", "City operations", LayoutDashboard],
+      ["l-incidents", "Incidents", Siren],
+      ["ops-parking", "Parking simulator", CarFront],
+      ["l-alert", "Smart boards", BellRing],
       ...HAZARD_MODULES.map((module) => [
         module.routes.map,
         module.navLabel,
         HAZARD_ICONS[module.icon],
       ]),
-      ["l-mobility", "Mobility", CarFront],
+      ["l-mobility", "Live parking", CarFront],
     ],
   },
 ];
@@ -948,7 +957,7 @@ function DataState({ loading, error }) {
 }
 
 /* ───────────── pages ───────────── */
-function MapPage({ data, region, setRegion, onNavigate }) {
+function MapPage({ data, region, setRegion, onNavigate, onDemoIncident }) {
   const view = REGIONS[region];
   const { summary, hotspots } = data;
   const [eventIdx, setEventIdx] = useState(-1);
@@ -1144,6 +1153,7 @@ function MapPage({ data, region, setRegion, onNavigate }) {
             cityLabel={view.label}
           />
           <CameraControls map={map} view={view} />
+          {selection?.kind === "hotspot" && <button className="ghost-btn glass" style={{position:"absolute", bottom:175, left:24, zIndex:10}} onClick={() => onDemoIncident(hotspots.find(h => h.id === selection.id))}>Create demo report at selected hotspot → Operations</button>}
           {simActive && dam ? (
             <DamHud
               stats={simStats}
@@ -1461,19 +1471,32 @@ function SourcesPage({ data, onNavigate }) {
 
 export default function App() {
   const [page, setPage] = useState(() =>
-    ["l-overview", "l-incidents", "l-alert", "l-devices"].includes(window.location.hash.slice(1))
-      ? "map"
-      : window.location.hash.slice(1) || "map",
+    ["l-overview", "l-devices"].includes(window.location.hash.slice(1))
+      ? "operations"
+      : window.location.hash.slice(1) || "operations",
   ); // e.g. #heat-map
   const [region, setRegion] = useState("sofia");
   const [railExpanded, setRailExpanded] = useState(false);
+  const operations = useOperations();
+  const operationalPages = ["operations", "l-incidents", "ops-parking", "l-alert"];
+  useEffect(() => { if (["sofia", "pernik"].includes(operations.city.id)) setRegion(operations.city.id); }, [operations.city.id]);
+  const changeRegion = id => { setRegion(id); const c = REGIONS[id]; operations.selectCity({id, label:c.label, country:c.country, latitude:c.center[1], longitude:c.center[0]}); };
+  const navigateOperations = id => setPage(id === "l-mobility" ? "ops-parking" : id);
   const data = useFloodData(region);
   return (
     <div className={`shell ${railExpanded ? "rail-expanded" : ""}`}>
       <Rail page={page} setPage={setPage} expanded={railExpanded} setExpanded={setRailExpanded} />
       <main className={`main main-${page}`}>
+        {operationalPages.includes(page) && <OperationsPage key={page} op={operations} page={page === "ops-parking" ? "l-mobility" : page} onNavigate={navigateOperations} />}
         {page === "map" && (
-          <MapPage data={data} region={region} setRegion={setRegion} onNavigate={setPage} />
+          <MapPage data={data} region={region} setRegion={changeRegion} onNavigate={setPage} onDemoIncident={h => {
+            if (!h) return;
+            const c = REGIONS[region];
+            const city = {id:region, label:c.label, country:c.country, latitude:c.center[1], longitude:c.center[0]};
+            operations.selectCity(city);
+            operations.scenario("flood", {name:h.name, latitude:h.coord[1], longitude:h.coord[0], historical:true}, city);
+            setPage("l-incidents");
+          }} />
         )}
         {page === "register" && <RegisterPage data={data} onNavigate={setPage} />}
         {page === "sources" && <SourcesPage data={data} onNavigate={setPage} />}
@@ -1485,7 +1508,7 @@ export default function App() {
         {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
         {page !== "l-heat" &&         page !== "l-flood" &&
         page !== "l-fog" &&
-        page !== "l-mobility" && page.startsWith("l-") && (
+        page !== "l-mobility" && !operationalPages.includes(page) && page.startsWith("l-") && (
           <LegacyApp page={page.slice(2)} onNavigateRoute={setPage} />
         )}
       </main>
