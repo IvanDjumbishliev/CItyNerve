@@ -1153,7 +1153,17 @@ function MapPage({ data, region, setRegion, onNavigate }) {
               setPaused={setSimPaused}
               onStop={endSim}
             />
-          ) : null}
+          ) : ev ? (
+            <EventTimeline
+              ev={ev}
+              hour={hour}
+              setHour={setHour}
+              playing={playing}
+              setPlaying={setPlaying}
+            />
+          ) : (
+            <RecordTimeline summary={summary} onPick={setEventIdx} />
+          )}
         </>
       ) : (
         <DataState loading={data.loading} error={data.error} />
