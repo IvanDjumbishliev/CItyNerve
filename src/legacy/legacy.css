@@ -1035,48 +1035,6 @@
   color: #889bb4;
   font-size: 12px;
 }
-.legacy .settings-panel {
-  max-width: 690px;
-  padding: 25px;
-}
-.legacy .settings-panel h2 {
-  font-size: 17px;
-  margin: 0 0 7px;
-}
-.legacy .settings-panel p {
-  font-size: 12px;
-  color: #8fa4be;
-  margin: 0 0 25px;
-}
-.legacy .settings-panel label {
-  display: block;
-  font-size: 11px;
-  color: #91a8c0;
-  margin-bottom: 8px;
-}
-.legacy .settings-panel select {
-  background: #162a43;
-  color: #dcebf9;
-  border: 1px solid #395570;
-  padding: 11px;
-  border-radius: 8px;
-  max-width: 100%;
-  min-width: 250px;
-  margin-bottom: 20px;
-}
-.legacy .settings-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid #26384b;
-  padding: 16px 0;
-  color: #899eb7;
-  font-size: 12px;
-}
-.legacy .settings-line strong {
-  color: #d4e3f3;
-  font-size: 12px;
-}
 .legacy .scrim {
   display: none;
 }

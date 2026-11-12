@@ -37,7 +37,7 @@ function Header({ city, setCityId, page, onNavigateRoute }) {
         <span>City Operations</span>
         <ChevronRight size={15} />
         <strong>
-          {page === "settings" ? "Settings" : MODULES.find((module) => module.id === page)?.name}
+          {MODULES.find((module) => module.id === page)?.name}
         </strong>
       </div>
       {hazard && (
@@ -205,47 +205,6 @@ function ModulePage({ type, city }) {
     </>
   );
 }
-function SettingsPage({ city, cityId, setCityId }) {
-  return (
-    <>
-      <div className="page-heading">
-        <div>
-          <div className="eyebrow">SYSTEM / SETTINGS</div>
-          <h1>Workspace settings</h1>
-          <p>Configuration for your CityNerve demonstration environment.</p>
-        </div>
-      </div>
-      <section className="panel settings-panel">
-        <h2>City configuration</h2>
-        <p>Select which European city your demo is currently representing.</p>
-        <label htmlFor="settings-city">Active city</label>
-        <select id="settings-city" value={cityId} onChange={(e) => setCityId(e.target.value)}>
-          {CITIES.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}, {c.country}
-            </option>
-          ))}
-        </select>
-        <div className="settings-line">
-          <span>Region</span>
-          <strong>{city.region}</strong>
-        </div>
-        <div className="settings-line">
-          <span>Data mode</span>
-          <Tag variant="amber">Simulated / sample</Tag>
-        </div>
-        <div className="settings-line">
-          <span>Connected APIs</span>
-          <strong>None yet</strong>
-        </div>
-        <div className="settings-line">
-          <span>Environment</span>
-          <strong>Hackathon development</strong>
-        </div>
-      </section>
-    </>
-  );
-}
 export default function LegacyApp({ page, onNavigateRoute }) {
   const [cityId, setCityId] = useState("michalovce");
   const city = CITIES.find((item) => item.id === cityId) || CITIES[0];
@@ -259,8 +218,6 @@ export default function LegacyApp({ page, onNavigateRoute }) {
             <div className="content-inner">
               {!blankLivePage && MODULE_KEYS.includes(page) ? (
                 <ModulePage type={page} city={city} />
-              ) : !blankLivePage && page === "settings" ? (
-                <SettingsPage city={city} cityId={cityId} setCityId={setCityId} />
               ) : null}
               {!blankLivePage && (
                 <footer className="app-footer">
