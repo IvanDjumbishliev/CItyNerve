@@ -1,93 +1,194 @@
-# FloodNerve · Sofia — Flood-risk UI prototype
+<div align="center">
 
-A 3D flood-risk interface for Sofia, Bulgaria. It is designed to visualise how storm water moves and ponds across the city using free NASA Earth-observation data (NASADEM, ICESat-2 / G-LiHT lidar, GPM IMERG rainfall, SMAP soil moisture, HLS land cover) combined with OpenStreetMap.
+# CityNerve
 
-Audiences: **municipality** (where to fix first), **insurers** (exposure and expected loss) and **funds / investors** (flood screening of data-centre sites).
+### One city. Four ways to understand it.
 
-## Start
+**See flood risk. Understand fog. Find urban heat. Check available parking.**
 
-Requires Node.js 20.19+ or 22+ (compatible with Vite 6).
+A visual city dashboard that brings Earth observation, weather records, building geometry, and parking feeds onto interactive maps.
+
+[Explore the app](#explore-the-app) · [Run locally](#run-locally) · [Data and accuracy](#data-and-accuracy) · [For developers](#for-developers)
+
+</div>
+
+![CityNerve flood map showing Sofia's terrain, streets, risk layers, and storm controls](docs/screenshots/flood.png)
+
+## The idea
+
+Cities have plenty of data. Understanding what it means for a particular street or neighborhood is harder.
+
+CityNerve puts that information on the map. Instead of reading separate weather tables, satellite records, and parking websites, you can explore a city, inspect a place, and see the evidence behind it.
+
+- **Where could water collect during a storm?** Explore modeled flood depths and problem spots.
+- **Which areas are prone to fog?** Compare recorded airport fog events with a terrain-based screening layer.
+- **Why do some neighborhoods get hotter?** Inspect satellite-measured surface heat and explore building shadows through the day.
+- **Where can I park?** Check operator-reported availability at supported facilities.
+
+It is built for curious residents, students, researchers, and city teams exploring where to investigate next.
+
+## Explore the app
+
+| Module | What you can explore | What powers it |
+| --- | --- | --- |
+| **FloodNerve** | 3D terrain, storm playback, modeled flood depths, hotspots, and a risk register | Terrain, rainfall, soil wetness, land cover, and space lidar |
+| **FogNerve** | Recorded fog episodes, playback, terrain-proneness maps, and risk summaries | Airport observations, weather reanalysis, terrain, and land cover |
+| **HeatNerve** | Summer surface heat, named hotspots, possible cooling actions, and building shadows | Landsat thermal imagery, vegetation and albedo, lidar, and building geometry |
+| **Mobility** | Parking maps, facility search, available-space sorting, and provider freshness | Public parking-provider feeds |
+
+### Flood - follow the storm
+
+Choose a study area and recorded storm, explore the map, and play through its modeled development. Open the risk register to inspect problem spots, or Data & model to see how the results were produced.
+
+Flood study areas are configured for **Sofia and Pernik**. Coverage follows the generated datasets, rather than every city on the basemap.
+
+### Fog - make low visibility visible
+
+![FogNerve map with Sofia's fog screening layers and event controls](docs/screenshots/fog.png)
+
+Explore observed fog episodes at Sofia Airport alongside modeled terrain-proneness layers. The event catalogue and data pages help distinguish measured observations from model outputs.
+
+### Heat - see where the city holds heat
+
+![HeatNerve satellite-based urban heat analysis for Sofia](docs/screenshots/heat.png)
+
+Heat analysis shows places where roofs, roads, and paved ground are hotter than the surrounding vegetated countryside. Inspect hotspots to understand the contributing surfaces and suggested cooling measures.
+
+**Want to explore shade at street level?** Switch to the Heat Live view, choose a town, and change the time of day. Building shadows move with the calculated sun position. Load buildings around the area you want to inspect.
+
+![Heat Live view showing buildings, shade controls, and the selected city](docs/screenshots/shadows.png)
+
+Satellite heat analysis and the building-shadow explorer have different coverage. Selecting another town for shadows does not create a new Landsat heat dataset for that town.
+
+### Mobility - find a space, not another spreadsheet
+
+![Mobility parking map with city selection and available-space information](docs/screenshots/mobility.png)
+
+Choose **Sofia, Basel, Ghent, St. Gallen, or Zürich**, search facilities, and compare reported availability. Coverage is limited to participating facilities; it is not a count of every street parking space in a city.
+
+Parking responses are cached for 60 seconds. Failed refreshes retain the last successful readings with a stale indicator. Provider update times and available fields vary.
+
+## Run locally
+
+Requires **Node.js 20.19+ or 22+**, npm, and internet access for map tiles and external feeds.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the localhost URL printed by Vite (usually http://localhost:5173).
+Open the URL printed in the terminal, usually **http://localhost:5173**.
 
-Production build:
+Start with **Flood**, then explore **Fog**, **Heat**, and **Mobility** from the navigation rail. Flood, Fog, and Heat provide Analysis and Live view controls where configured. Some Live views are still framework placeholders; Heat includes the interactive shadow explorer.
+
+### Production
 
 ```bash
 npm run build
-npm run preview
+npm start
 ```
 
-## Included
+Open **http://localhost:3000**. Set `PORT` to use another port.
 
-- Full-screen 3D map (MapLibre GL + OpenStreetMap, SRTM terrain, 3D OSM buildings)
-- **Real flood model results** for Sofia from NASA GPM IMERG rain, MERRA-2 soil wetness, ICESat-2 lidar and SRTM terrain, covering the last 5 years: flood depth per real storm, 5-year maximum, river network, problem spots with real storm dates
-- Storm list, hourly timeline with playback, risk register and data & model pages
+Use the Node server for deployment: it serves both the built app and the parking API. A static-file-only host needs the parking backend connected separately. `npm run preview` is available for checking a production build locally.
 
-Data is produced by the Python pipeline in [pipeline/](pipeline/README.md) (`npm run data`).
+### Generate the environmental datasets
 
-## Important: what is real
+The app reads generated analysis files from `public/data/`. Rendering the app and generating those datasets are separate steps. Missing outputs must be generated before their analysis views can show results.
 
-Map, terrain, rainfall, soil wetness, lidar and land cover are real data (NASA SRTM, ICESat-2, GPM IMERG, MERRA-2; ESA WorldCover; OpenStreetMap). The flood depths and problem spots are outputs of a **screening model** run on that data (see `pipeline/README.md` for method and limits). It is not an official flood map: sewer capacity is assumed, terrain is 28 m, and rain intensity within a day is smoothed.
-
-## FogNerve · Sofia fog screening
-
-FogNerve is available from the navigation rail beside FloodNerve. It includes a MapLibre 3D terrain map, observed fog-event catalogue and playback, fog-risk register, hotspot panel, and data/model notes.
-
-Run just the fog inputs and model:
+Create a Python environment and install the pipeline dependencies:
 
 ```bash
-npm run data:fog
+python -m venv pipeline/.venv
 ```
 
-The fog pipeline reuses the SRTM and WorldCover downloads from the flood pipeline when present (it downloads missing shared inputs), then writes `fog_summary.json`, `fog_events.json`, `fog_hotspots.json`, `fog_risk_register.json` and `fog_proneness.png` into `public/data/`. The full `npm run data` run includes FogNerve after FloodNerve.
-
-Observed episodes are based on real Iowa Environmental Mesonet METAR visibility and FG/BR/FZFG weather codes at Sofia Airport (LBSF). Hourly temperature, dew point, relative humidity, wind and low cloud are from ERA5 via Open-Meteo; NASA POWER MERRA-2 temperature, dew point, humidity and wind are fetched as a secondary series. The station model is calibrated on real observations and reports chronological holdout hit rate, false-alarm rate, probability of detection (POD) and false-alarm ratio (FAR). The city raster is a modelled terrain-proneness adjustment, not a grid of observed visibility.
-
-OpenStreetMap road exposure is fetched from Overpass when a public endpoint is reachable. If that service is unavailable, road lengths and traffic exposure are left blank and the data page reports the source failure; they are not estimated as zero or fabricated. NASA POWER rejected the proposed cloud-cover/PBLH parameter names, so ERA5 via Open-Meteo supplies low-cloud cover; no satellite fog product is used. **FogNerve is a screening prototype, not an official fog warning and not for safety-critical use.** Do not use it to issue speed limits, signage, de-icing actions, or operational instructions without independent field validation.
-
-## HeatNerve · Sofia urban heat island
-
-HeatNerve (Heat map, Heat risk, Heat data in the navigation rail) shows how much hotter Sofia's concrete, asphalt and roofs get than the countryside around it, and what to do about it at each hot spot.
+On Windows:
 
 ```bash
-npm run data:heat
+pipeline/.venv/Scripts/python -m pip install -r pipeline/requirements.txt
 ```
 
-Real inputs, no logins: **Landsat 8/9 Collection 2 Level-2** surface temperature (thermal band 10) and surface reflectance for every clear summer pass 2022–2026 (Microsoft Planetary Computer STAC); **GEDI L2A** and **ICESat-2 ATL08** space lidar via SlideRule (tree canopy vs roof heights); **NASA POWER** daily air temperature (hot days, heatwaves); ESA WorldCover and SRTM from the shared pipeline. `pipeline/heat_model.py` computes the surface heat island (pass temperature − vegetated countryside at the same altitude), NDVI and albedo, a regression on Sofia's own cells for cooling estimates, and ranks hotspots named from OpenStreetMap. Each hotspot lists its data-derived cause (bare ground, large roofs/paved lots, dark surfaces, missing trees) and actions. Outputs go to `public/data/heat/`. Landsat measures midday **surface** temperature, not air temperature, and the cooling numbers are statistical associations, not a design guarantee.
+On macOS or Linux:
 
-## Where to start integrating
+```bash
+pipeline/.venv/bin/python -m pip install -r pipeline/requirements.txt
+```
 
-1. `src/data.js` holds FloodNerve's Sofia map configuration.
-2. `src/App.jsx` registers FloodNerve, FogNerve, and the platform navigation.
-3. FogNerve observations and model outputs are fetched by `src/useFogData.js`.
-4. `pipeline/fetch_fog_inputs.py` and `pipeline/fog_model.py` build its station catalogue, validation metrics, and terrain/exposure outputs.
+Then run the datasets you need:
 
-## Suggested initial API contract
+| Command | Purpose |
+| --- | --- |
+| `npm run data` | Generate the flood and fog analysis datasets |
+| `npm run data:fog` | Generate fog inputs and model outputs |
+| `npm run data:heat` | Generate heat inputs and model outputs |
 
-- `GET /api/cities`
-- `GET /api/weather?cityId=michalovce`
-- `POST /api/events` (authenticated / validated)
-- `POST /api/demo/scenarios` (restricted to demo environment)
+Downloads and processing can take time. See the [pipeline guide](pipeline/README.md) for inputs, methods, and configuration.
 
-## Recommended next step
+## Data and accuracy
 
-Build CityNerve Core first (shared events and incident database), then FloodNerve. The remaining tabs can be implemented independently after shared event schemas are stable.
+**Real inputs. Transparent models. Clear limits.**
 
-## Safety
+| Area | Main inputs | How to interpret the result |
+| --- | --- | --- |
+| Flood | NASA/NGA SRTM terrain, ICESat-2 lidar, GPM IMERG rainfall, MERRA-2 weather and soil wetness, ESA WorldCover | Flood depths are screening-model estimates. Sewer capacity is assumed and the terrain grid is about 28 m. Curbs and narrow underpasses are not resolved. |
+| Fog | Iowa Environmental Mesonet METAR observations at Sofia Airport, ERA5 via Open-Meteo, NASA POWER weather, terrain and land cover | Airport events are observations. The city-wide terrain layer is modeled proneness, not measured visibility on every street. |
+| Heat | Landsat 8/9 surface temperature and reflectance via Microsoft Planetary Computer, GEDI and ICESat-2 lidar via SlideRule, NASA POWER weather | Landsat measures surface temperature near its daytime overpass, not the air temperature felt by a pedestrian. Cooling estimates are statistical associations. |
+| Shadows | Building footprints and heights, SunCalc solar position | Shadows depend on the completeness of building geometry and height data. They do not measure local air temperature. |
+| Parking | Supported public operator feeds | Availability reflects the provider's last report. Capacity, timestamps, and coverage vary by city. |
 
-This starter is not intended for safety-critical operations, official flood or fog warnings, or autonomous control of real infrastructure. Any physical-barrier demo should use a miniature model with local interlocks and an easily accessible power cut-off.
+Maps use **MapLibre GL**, **OpenFreeMap/OpenStreetMap**, and terrain layers where enabled. Attribution stays visible in the app.
 
-### Parking availability
+CityNerve is an exploration and screening prototype. It is not an official warning system, an engineering flood assessment, or a substitute for local observations.
 
-Mobility uses operator-reported availability for six Sofia facilities and Basel-Stadt parking data (CC BY 4.0). Sofia supplies neither capacity nor measurement timestamps; its catalog leaves reuse licensing unspecified. Confirm operator reuse terms for public deployment. Basel records with impossible counts are omitted.
+<details>
+<summary><strong>Parking sources and reuse notes</strong></summary>
 
-Run npm run dev for development. For production run npm run build followed by npm start (Node 20+). PORT defaults to 3000. The Node server supplies the same /api/parking/{city} adapters used by Vite. A purely static deployment needs this API service behind the same origin. Responses are cached for 60 seconds; failed refreshes retain the last successful readings with a stale flag.
+- **Sofia:** operator-reported availability for six facilities. Capacity and measurement timestamps are not supplied; confirm operator reuse terms before public deployment.
+- **Basel:** Basel-Stadt parking data, CC BY 4.0. Impossible counts are excluded.
+- **Ghent:** municipal parking data under its free-reuse model license.
+- **St. Gallen:** CC BY-NC data. Noncommercial reuse restrictions apply.
+- **Zürich:** official PLS RSS under CC0, joined to ParkenDD facility metadata. Facilities without usable coordinates or counts are excluded.
 
-Additional parking providers are Ghent (municipal free-reuse model license), St. Gallen (CC BY-NC, noncommercial reuse) and Zürich (PLS live RSS under CC0, with coordinates/capacity joined by normalized facility name to ParkenDD metadata). Zürich facilities without usable coordinates or counts are excluded; its official per-facility timestamps are retained. Update cadence, coverage and data age vary by provider.
+Public data availability does not mean every provider has identical reuse terms. Check the source terms for your deployment.
 
-Bratislava and Košice have sensor-backed parking services, but a publicly accessible occupancy feed for this integration has not been verified. Their payment and permit APIs do not establish access to current availability.
+</details>
+
+## For developers
+
+```text
+src/                 React pages, maps, visualizations, and interactions
+shared/              Shared city and provider configuration
+server/              Parking adapters, caching, and production HTTP server
+pipeline/            Environmental data downloads and screening models
+public/data/         Generated datasets consumed by the app
+tests/               Heat geometry and parking adapter checks
+docs/screenshots/    Real app captures used in this README
+```
+
+The frontend uses **React 18**, **Vite 6**, **MapLibre GL**, and **Lucide**. Python pipelines prepare environmental datasets; the Node backend provides `/api/parking/{city}` in development and production.
+
+Run the existing checks:
+
+```bash
+node --test tests/*.test.js
+npm run build
+```
+
+### Adding another city
+
+A map can pan anywhere, but analysis coverage needs city-specific data.
+
+- **Flood:** add a study area in `src/data.js`, configure the pipeline, generate its outputs, and validate the model assumptions locally.
+- **Fog and satellite heat:** generate and validate the relevant observation and imagery datasets before exposing a new analysis area.
+- **Building shadows:** add a town configuration and building geometry supported by the existing heat explorer.
+- **Parking:** add a city in `shared/parkingCities.js` and a provider adapter with verified coordinates, availability fields, attribution, and reuse terms.
+
+Keep provider failures visible, preserve source timestamps, and label modeled or approximate information clearly.
+
+---
+
+<div align="center">
+
+**CityNerve - turn city data into places people can understand.**
+
+</div>
