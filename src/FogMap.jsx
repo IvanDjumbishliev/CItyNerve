@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
-import { STYLE } from './FloodMap.jsx';
+import { getMapStyle, applyMapTheme } from './FloodMap.jsx';
 import { CITY, riskLevel } from './data.js';
 import { fogDataUrl } from './useFogData.js';
+import useAppTheme from './useAppTheme.js';
 
 const VISIBILITY_COLOURS = [
   { limit: 200, colour: [239, 244, 246], opacity: 0.9 },
@@ -12,6 +13,7 @@ const VISIBILITY_COLOURS = [
 ];
 
 export default function FogMap({ grid, raster, fogProbability, expectedVisibility, hotspots, layers, selectedId, onSelect, onReady }) {
+  const theme = useAppTheme();
   const container = useRef(null);
   const mapRef = useRef(null);
   const loaded = useRef(false);
@@ -48,7 +50,7 @@ export default function FogMap({ grid, raster, fogProbability, expectedVisibilit
   useEffect(() => {
     const map = new maplibregl.Map({
       container: container.current,
-      style: JSON.parse(JSON.stringify(STYLE)),
+      style: getMapStyle(theme),
       center: CITY.center,
       zoom: CITY.zoom,
       pitch: CITY.pitch,
@@ -61,10 +63,7 @@ export default function FogMap({ grid, raster, fogProbability, expectedVisibilit
     if (import.meta.env.DEV) window.__fogMap = map;
     map.once('style.load', () => {
       try { map.setTerrain({ source: 'dem', exaggeration: 1.6 }); } catch { /* terrain tiles may be unavailable */ }
-      try {
-        map.setSky({ 'sky-color': '#B8C6CE', 'horizon-color': '#D6E0E5', 'fog-color': '#AAB8C0',
-          'sky-horizon-blend': 0.72, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.38 });
-      } catch { /* optional on older MapLibre engines */ }
+      applyMapTheme(map, theme);
       loaded.current = true;
       setReady(true);
       onReady?.(map);
@@ -76,6 +75,10 @@ export default function FogMap({ grid, raster, fogProbability, expectedVisibilit
       mapRef.current = null;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (mapRef.current) applyMapTheme(mapRef.current, theme);
+  }, [theme]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { CITY, riskLevel } from "./data.js";
 import { dataUrl } from "./useFloodData.js";
 import { onFrame } from "./damSim.js";
+import useAppTheme from "./useAppTheme.js";
 
 /* ─────────────── base style: OpenStreetMap via OpenFreeMap vector tiles ─────────────── */
 const NAME = ["coalesce", ["get", "name:en"], ["get", "name:latin"], ["get", "name"]];
@@ -195,6 +196,90 @@ export const STYLE = {
   ],
 };
 
+const LIGHT_PAINT = {
+  bg: { "background-color": "#F1F5F7" },
+  landcover: { "fill-color": "#E4EEE5" },
+  park: { "fill-color": "#D8E9D8" },
+  landuse: { "fill-color": "#E6EBEE" },
+  hillshade: {
+    "hillshade-shadow-color": "#AEBBC0",
+    "hillshade-highlight-color": "#FFFFFF",
+    "hillshade-accent-color": "#D2DADD",
+  },
+  water: { "fill-color": "#B9DCEB" },
+  waterway: { "line-color": "#76B5CC" },
+  "road-minor": { "line-color": "#C9D4D9" },
+  "road-major": { "line-color": "#A9BBC4" },
+  rail: { "line-color": "#84949C" },
+  "buildings-3d": {
+    "fill-extrusion-color": [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "render_height"], 6],
+      0,
+      "#D5DEE2",
+      25,
+      "#C2D0D6",
+      70,
+      "#AABEC7",
+    ],
+  },
+  "place-label": { "text-color": "#506976", "text-halo-color": "#F4F7F8" },
+  "road-label": { "text-color": "#607782", "text-halo-color": "#F4F7F8" },
+};
+
+const DARK_PAINT = Object.fromEntries(
+  STYLE.layers.filter((layer) => layer.paint).map((layer) => [layer.id, layer.paint]),
+);
+
+function themePaint(theme) {
+  return theme === "light" ? LIGHT_PAINT : DARK_PAINT;
+}
+
+export function getMapStyle(theme = "dark") {
+  const style = structuredClone(STYLE);
+  const palette = themePaint(theme);
+  for (const layer of style.layers) {
+    if (palette[layer.id]) layer.paint = { ...layer.paint, ...palette[layer.id] };
+  }
+  return style;
+}
+
+export function applyMapTheme(map, theme) {
+  const apply = () => {
+    const palette = themePaint(theme);
+    for (const [layerId, properties] of Object.entries(palette)) {
+      if (!map.getLayer(layerId)) continue;
+      for (const [property, value] of Object.entries(properties)) {
+        map.setPaintProperty(layerId, property, value);
+      }
+    }
+    try {
+      map.setSky(theme === "light"
+        ? {
+            "sky-color": "#D7E8F0",
+            "horizon-color": "#F1F5F7",
+            "fog-color": "#E7EFF3",
+            "sky-horizon-blend": 0.7,
+            "horizon-fog-blend": 0.6,
+            "fog-ground-blend": 0.35,
+          }
+        : {
+            "sky-color": "#0B1722",
+            "horizon-color": "#1A3447",
+            "fog-color": "#0C141C",
+            "sky-horizon-blend": 0.7,
+            "horizon-fog-blend": 0.6,
+            "fog-ground-blend": 0.35,
+          });
+    } catch {
+      // Sky is optional in MapLibre versions without terrain sky support.
+    }
+  };
+  if (map.isStyleLoaded()) apply();
+  else map.once("style.load", apply);
+}
+
 const DASH_SEQ = [
   [0, 4, 3],
   [0.5, 4, 2.5],
@@ -317,6 +402,7 @@ export default function FloodMap({
   damActive,
   base = "",
 }) {
+  const theme = useAppTheme();
   const baseRef = useRef(base);
   baseRef.current = base;
   const box = useRef(null);
@@ -355,7 +441,7 @@ export default function FloodMap({
   useEffect(() => {
     const map = new maplibregl.Map({
       container: box.current,
-      style: STYLE,
+      style: getMapStyle(theme),
       center: CITY.center,
       zoom: CITY.zoom,
       pitch: CITY.pitch,
@@ -374,14 +460,7 @@ export default function FloodMap({
         /* terrain optional */
       }
       try {
-        map.setSky({
-          "sky-color": "#0B1722",
-          "horizon-color": "#1A3447",
-          "fog-color": "#0C141C",
-          "sky-horizon-blend": 0.7,
-          "horizon-fog-blend": 0.6,
-          "fog-ground-blend": 0.35,
-        });
+        applyMapTheme(map, theme);
       } catch (e) {
         /* older engines */
       }
@@ -538,6 +617,10 @@ export default function FloodMap({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (mapRef.current) applyMapTheme(mapRef.current, theme);
+  }, [theme]);
 
   // flood raster source (needs grid bounds from the summary)
   useEffect(() => {

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
-import { STYLE, makeDrapeCanvas, blit, refreshDrape } from './FloodMap.jsx';
+import { getMapStyle, applyMapTheme, makeDrapeCanvas, blit, refreshDrape } from './FloodMap.jsx';
 import { riskLevel } from './data.js';
 import { heatDataUrl } from './useHeatData.js';
+import useAppTheme from './useAppTheme.js';
 
 const VIEW = { center: [23.326, 42.692], zoom: 11.9, pitch: 55, bearing: -20 };
 
@@ -51,6 +52,7 @@ function decode(url, cb) {
 }
 
 export default function HeatMap({ summary, hotspots, png, mode, refC, layers, selectedId, onSelect, onReady }) {
+  const theme = useAppTheme();
   const box = useRef(null);
   const mapRef = useRef(null);
   const loaded = useRef(false);
@@ -77,18 +79,21 @@ export default function HeatMap({ summary, hotspots, png, mode, refC, layers, se
   };
 
   useEffect(() => {
-    const style = JSON.parse(JSON.stringify(STYLE));
-    const map = new maplibregl.Map({ container: box.current, style, ...VIEW, maxPitch: 80, attributionControl: { compact: true }, antialias: true });
+    const map = new maplibregl.Map({ container: box.current, style: getMapStyle(theme), ...VIEW, maxPitch: 80, attributionControl: { compact: true }, antialias: true });
     mapRef.current = map;
     if (import.meta.env.DEV) window.__heatMap = map;
     map.once('style.load', () => {
       try { map.setTerrain({ source: 'dem', exaggeration: 1.4 }); } catch { /* terrain optional */ }
-      try { map.setSky({ 'sky-color': '#1A1410', 'horizon-color': '#4A2E1C', 'fog-color': '#120E0B', 'sky-horizon-blend': 0.7, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.35 }); } catch { /* older engines */ }
+      applyMapTheme(map, theme);
       loaded.current = true;
       onReady?.(map);
     });
     return () => { loaded.current = false; map.remove(); mapRef.current = null; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (mapRef.current) applyMapTheme(mapRef.current, theme);
+  }, [theme]);
 
   // rasters + lidar (once the summary is known)
   useEffect(() => {
