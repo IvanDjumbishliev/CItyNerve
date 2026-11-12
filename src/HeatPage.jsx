@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import { STYLE } from "./FloodMap.jsx";
+import { getMapStyle, applyMapTheme } from "./FloodMap.jsx";
 import SatelliteHeat from "./heat/SatelliteHeat.jsx";
 import { buildingShadows, sunPosition, inShade, inRing } from "./heat/shadows.js";
 
 import { HEAT_TOWNS, boundary, coverageOf, loadNeighborhood } from "./heat/towns.js";
 import ModuleTabs from "./ModuleTabs.jsx";
 import { Play, Pause, MapPin, Maximize2, Building2, Loader2, ChevronDown, X } from "lucide-react";
+import useAppTheme from "./useAppTheme.js";
 const empty = { type: "FeatureCollection", features: [] };
 const timeLabel = (hour) =>
   Math.floor(hour).toString().padStart(2, "0") +
@@ -21,6 +22,7 @@ export default function HeatPage({ onNavigate }) {
   return <TownHeat key={townId} town={town} townId={townId} setTownId={setTownId} onNavigate={onNavigate} />;
 }
 function TownHeat({ town, townId, setTownId, onNavigate }) {
+  const theme = useAppTheme();
   const [bounds, setBounds] = useState(null),
     [loading, setLoading] = useState(false),
     [outside, setOutside] = useState(false);
@@ -115,7 +117,7 @@ function TownHeat({ town, townId, setTownId, onNavigate }) {
   useEffect(() => {
     let view;
     try {
-      const style = structuredClone(STYLE);
+      const style = getMapStyle(theme);
       style.layers = style.layers.filter((l) => l.id !== "buildings-3d");
       view = new maplibregl.Map({
         container: host.current,
@@ -198,6 +200,9 @@ function TownHeat({ town, townId, setTownId, onNavigate }) {
       map.current = null;
     };
   }, []);
+  useEffect(() => {
+    if (map.current) applyMapTheme(map.current, theme);
+  }, [theme]);
   useEffect(() => {
     if (!ready) return;
     map.current

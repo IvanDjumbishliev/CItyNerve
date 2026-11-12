@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import { STYLE } from "./FloodMap.jsx";
+import { getMapStyle, applyMapTheme } from "./FloodMap.jsx";
 import { PARKING_CITIES } from "../shared/parkingCities.js";
+import useAppTheme from "./useAppTheme.js";
 export default function MobilityPage() {
+  const theme = useAppTheme();
   const [city, setCity] = useState("sofia"),
     [data, setData] = useState(null),
     [error, setError] = useState(""),
@@ -18,7 +20,7 @@ export default function MobilityPage() {
   useEffect(() => {
     const view = new maplibregl.Map({
       container: host.current,
-      style: structuredClone(STYLE),
+      style: getMapStyle(theme),
       center: [23.33, 42.69],
       zoom: 12,
       pitch: 0,
@@ -31,6 +33,9 @@ export default function MobilityPage() {
       map.current = null;
     };
   }, []);
+  useEffect(() => {
+    if (map.current) applyMapTheme(map.current, theme);
+  }, [theme]);
   useEffect(() => {
     setData(null);
     setSelected(null);
