@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchParking } from '../src/operations/api.js';
+import { fetchOverpassParking as fetchParking } from '../server/osmParking.js';
 import { mergeParking } from '../src/operations/engine.js';
 const city = { latitude: 42.692, longitude: 23.326 };
 const endpoints = ['https://first.example/api', 'https://second.example/api'];

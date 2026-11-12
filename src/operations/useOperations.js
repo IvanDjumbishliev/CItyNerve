@@ -43,12 +43,12 @@ export function useOperations() {
   async function loadParking() {
     parkingRequest.current?.abort(); const controller = new AbortController(); parkingRequest.current = controller;
     const city = state.city; setParkingLoading(true); setParkingError(''); setParkingProgress('Requesting parking locations…');
-    const timeout = setTimeout(() => controller.abort(), 35000);
+    const timeout = setTimeout(() => controller.abort(), 80000);
     try {
       const rows = await fetchParking(city, controller.signal, { onProgress: message => { if (parkingRequest.current === controller) setParkingProgress(message); } });
       if (!controller.signal.aborted) {
         setState(s => s.city.id === city.id ? { ...s, parking: mergeParking(s.parking, rows, city.id) } : s);
-        setParkingProgress(rows.length ? `Loaded ${rows.length} parking areas from OpenStreetMap.` : 'No eligible parking areas were returned for this location.');
+        setParkingProgress(rows.length ? `Loaded ${rows.length} parking areas from OpenStreetMap.${rows.some(p => p.stale) ? ' Using older cached locations while providers are unavailable.' : ''}` : 'No eligible parking areas were returned for this location.');
       }
     } catch (e) { if (parkingRequest.current === controller) setParkingError(controller.signal.aborted ? 'Parking request timed out or was cancelled. Retry to load real locations.' : e.message); }
     finally { clearTimeout(timeout); if (parkingRequest.current === controller) { setParkingLoading(false); parkingRequest.current = null; } }

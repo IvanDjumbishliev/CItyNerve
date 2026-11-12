@@ -37,3 +37,6 @@ __pycache__/
 # Local previews and temporary branch imports
 /artifacts/
 /data/processed/import-*/
+
+# Cached public OSM inventories
+/.cache/
