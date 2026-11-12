@@ -48,7 +48,6 @@ import MobilityPage from "./MobilityPage.jsx";
 import OperationsPage from "./operations/OperationsPage.jsx";
 import { useOperations } from "./operations/useOperations.js";
 import HeatPage from "./HeatPage.jsx";
-import HazardLivePage from "./HazardLivePage.jsx";
 import FloodMap from "./FloodMap.jsx";
 import {
   CITY,
@@ -1470,11 +1469,14 @@ function SourcesPage({ data, onNavigate }) {
 }
 
 export default function App() {
-  const [page, setPage] = useState(() =>
-    ["l-overview", "l-devices"].includes(window.location.hash.slice(1))
-      ? "operations"
-      : window.location.hash.slice(1) || "operations",
-  ); // e.g. #heat-map
+  const [page, setPage] = useState(() => {
+    const initialRoute = window.location.hash.slice(1);
+    if (["l-overview", "l-devices", "l-flood"].includes(initialRoute)) {
+      return "operations";
+    }
+    if (initialRoute === "l-fog") return "fog-map";
+    return initialRoute || "operations";
+  }); // e.g. #heat-map
   const [region, setRegion] = useState("sofia");
   const [railExpanded, setRailExpanded] = useState(false);
   const operations = useOperations();
@@ -1501,14 +1503,12 @@ export default function App() {
         {page === "register" && <RegisterPage data={data} onNavigate={setPage} />}
         {page === "sources" && <SourcesPage data={data} onNavigate={setPage} />}
         {page === "l-heat" && <HeatPage onNavigate={setPage} />}
-        {page === "l-flood" && <HazardLivePage moduleId="flood" onNavigate={setPage} />}
-        {page === "l-fog" && <HazardLivePage moduleId="fog" onNavigate={setPage} />}
         {page === "l-mobility" && <MobilityPage />}
         {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
         {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
         {page !== "l-heat" &&         page !== "l-flood" &&
         page !== "l-fog" &&
-        page !== "l-mobility" && !operationalPages.includes(page) && page.startsWith("l-") && (
+        page !== "l-mobility" && page.startsWith("l-") && (
           <LegacyApp page={page.slice(2)} onNavigateRoute={setPage} />
         )}
       </main>
