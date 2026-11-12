@@ -12,7 +12,8 @@
     "data:heat": "node pipeline/run_heat.mjs",
     "data:air": "node pipeline/run_air.mjs",
     "test": "node --test tests/*.test.js",
-    "start": "node server/start.js"
+    "start": "node server/start.js",
+    "package:netlify": "vite build && node scripts/package-netlify.mjs"
   },
   "dependencies": {
     "fast-xml-parser": "5.12.0",

@@ -40,3 +40,4 @@ __pycache__/
 
 # Cached public OSM inventories
 /.cache/
+/netlify-upload/
