@@ -27,6 +27,31 @@
   color-scheme: dark;
 }
 
+html[data-theme="light"] {
+  --ink-0: #f3f6f8;
+  --ink-1: #e8eef2;
+  --ink-2: #ffffff;
+  --ink-3: #dce6ec;
+  --glass: rgba(255, 255, 255, 0.88);
+  --glass-strong: rgba(255, 255, 255, 0.96);
+  --line: rgba(39, 72, 91, 0.14);
+  --line-2: rgba(39, 72, 91, 0.25);
+  --text: #172b38;
+  --text-2: #435b69;
+  --muted: #627987;
+  --shadow: 0 16px 42px -16px rgba(27, 55, 72, 0.25), 0 0 0 1px rgba(39, 72, 91, 0.04);
+  color-scheme: light;
+}
+html[data-theme="light"] .rail-btn.is-active {
+  color: var(--water-deep);
+}
+html[data-theme="light"] .rail-btn.is-active::before {
+  background: var(--water-deep);
+}
+html[data-theme="light"] .maplibregl-ctrl-attrib {
+  background: var(--glass) !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -4863,7 +4888,7 @@ button {
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(11, 19, 27, 0.76);
+  background: var(--glass);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
@@ -4882,14 +4907,14 @@ button {
 }
 .module-tabs button.is-active {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--ink-3);
 }
 .module-mode {
   display: flex;
   gap: 1px;
   padding: 2px;
   border-radius: 9px;
-  background: rgba(0, 0, 0, 0.22);
+  background: var(--ink-3);
 }
 .module-mode button {
   min-height: 28px;
@@ -5001,6 +5026,10 @@ button {
 
 @media (max-width: 520px) {
   .rail,
+  .rail-theme {
+    width: auto;
+    flex: 0 0 42px;
+  }
   .rail.is-expanded {
     padding-inline: 3px;
     gap: 1px;
@@ -5011,6 +5040,21 @@ button {
   .rail.is-expanded .rail-settings {
     width: 34px;
     flex-basis: 34px;
+  }
+  .rail-theme,
+  .rail.is-expanded .rail-theme {
+    position: fixed;
+    z-index: 45;
+    right: 8px;
+    bottom: 66px;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--glass-strong);
+    box-shadow: var(--shadow);
   }
   .module-tabs {
     gap: 0;
