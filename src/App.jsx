@@ -34,7 +34,6 @@ import {
   CarFront,
   Siren,
   BellRing,
-  Settings2,
   PanelLeftClose,
   PanelLeftOpen,
   Sun,
@@ -216,17 +215,6 @@ function Rail({ page, setPage, expanded, setExpanded, theme, onToggleTheme }) {
       >
         {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
         <span>{theme === "dark" ? "Light theme" : "Dark theme"}</span>
-      </button>
-      <button
-        type="button"
-        className={`rail-btn rail-settings ${page === "l-settings" ? "is-active" : ""}`}
-        onClick={() => setPage("l-settings")}
-        aria-current={page === "l-settings" ? "page" : undefined}
-        aria-label="Settings"
-        title="Settings"
-      >
-        <Settings2 size={19} />
-        <span>Settings</span>
       </button>
     </nav>
   );
@@ -1513,8 +1501,11 @@ export default function App() {
   });
   const [page, setPage] = useState(() => {
     const initialRoute = window.location.hash.slice(1).split("?")[0];
-    if (["operations", "l-overview", "l-devices", "l-flood"].includes(initialRoute)) {
+    if (initialRoute === "operations") {
       return "l-alert";
+    }
+    if (["l-overview", "l-devices", "l-flood", "l-settings"].includes(initialRoute)) {
+      return "operations";
     }
     if (initialRoute === "l-fog") return "fog-map";
     return initialRoute || "l-alert";
@@ -1623,6 +1614,7 @@ export default function App() {
             page !== "l-fog" &&
             page !== "l-air" &&
             page !== "l-mobility" &&
+            page !== "l-settings" &&
             page.startsWith("l-") && <LegacyApp page={page.slice(2)} onNavigateRoute={setPage} />}
           <PlaceInspector />
         </main>

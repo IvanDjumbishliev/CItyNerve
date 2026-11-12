@@ -4850,13 +4850,6 @@ button {
   background: var(--water-hi);
   content: "";
 }
-.rail-settings {
-  margin-top: auto;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-  width: auto;
-  flex: 0 0 52px;
-}
 .rail.is-expanded {
   align-items: stretch;
   padding: 12px;
@@ -4875,9 +4868,6 @@ button {
 }
 .rail.is-expanded .rail-btn span {
   display: inline;
-}
-.rail.is-expanded .rail-settings {
-  border-top: 1px solid var(--line);
 }
 .module-tabs {
   display: flex;
@@ -4990,15 +4980,7 @@ button {
   .rail.is-expanded .rail-btn span {
     display: none;
   }
-  .rail-settings,
-  .rail.is-expanded .rail-settings {
-    width: 36px;
-    flex: 0 0 42px;
-    margin: 0 0 0 3px;
-    padding: 0;
-    border-top: 0;
-    border-left: 1px solid var(--line);
-  }
+
   .main {
     grid-row: 1;
   }
@@ -5035,9 +5017,7 @@ button {
     gap: 1px;
   }
   .rail-btn,
-  .rail.is-expanded .rail-btn,
-  .rail-settings,
-  .rail.is-expanded .rail-settings {
+  .rail.is-expanded .rail-btn {
     width: 34px;
     flex-basis: 34px;
   }
