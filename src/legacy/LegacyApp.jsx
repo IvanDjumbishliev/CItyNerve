@@ -1,105 +1,273 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from "react";
 import {
-  Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bell, BellRing, Building2,
-  CarFront, Check, ChevronDown, ChevronRight, CircleHelp, CloudFog, CloudRain,
-  CloudSun, Command, Download, Droplets, ExternalLink, Gauge, Globe2, LayoutDashboard,
-  Layers3, Map, MapPin, Menu, MoreHorizontal, Radio, RefreshCw, Search, Settings2,
-  ShieldCheck, Siren, ThermometerSun, TrafficCone, Waves, Wifi, X,
-} from 'lucide-react';
-import { CITIES, MODULES, INITIAL_INCIDENTS, SCENARIOS } from './legacyData.js';
-import { HAZARD_MODULES } from '../data.js';
-import ModuleTabs from '../ModuleTabs.jsx';
-
-const ICONS = { overview: LayoutDashboard, flood: Waves, fog: CloudFog, heat: ThermometerSun, mobility: CarFront, alert: BellRing, incidents: Siren, devices: Radio, settings: Settings2 };
-const MODULE_KEYS = ['flood', 'fog', 'heat', 'mobility', 'alert'];
-const typeName = (type) => ({flood:'FloodNerve',fog:'FogNerve',heat:'HeatNerve',mobility:'MobilityNerve',alert:'AlertNerve'})[type] ?? type;
-const nowTime = () => new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
-
-function Brand({ compact = false }) {
-  return <div className="brand"><div className="brand-symbol"><Activity size={21} strokeWidth={2.5} /></div>{!compact && <div className="brand-copy"><strong>CITYNERVE<span className="brand-dot">.</span></strong><small>URBAN INTELLIGENCE</small></div>}</div>;
+  Activity,
+  Waves,
+  CloudFog,
+  ThermometerSun,
+  CarFront,
+  Layers3,
+  ArrowUpRight,
+  MapPin,
+  ChevronRight,
+} from "lucide-react";
+import { CITIES, MODULES } from "./legacyData.js";
+import { HAZARD_MODULES } from "../data.js";
+import ModuleTabs from "../ModuleTabs.jsx";
+const ICONS = { flood: Waves, fog: CloudFog, heat: ThermometerSun, mobility: CarFront };
+const MODULE_KEYS = Object.keys(ICONS);
+function Tag({ children, variant = "neutral" }) {
+  return <span className={`tag tag-${variant}`}>{children}</span>;
 }
-function Tag({ children, variant = 'neutral' }) { return <span className={`tag tag-${variant}`}>{children}</span>; }
-function StatusDot({ color = 'green' }) { return <span className={`status-dot dot-${color}`} />; }
-function ModuleIcon({ module, size = 19 }) {const Icon = ICONS[module] ?? Activity;return <span className={`module-icon mod-${module}`}><Icon size={size}/></span>}
-function Header({ city, setCityId, page, onMenu, incidents, onNavigateRoute }) {
-  const [searchOpen, setSearchOpen] = useState(false);
+function StatusDot({ color = "green" }) {
+  return <span className={`status-dot dot-${color}`} />;
+}
+function ModuleIcon({ module, size = 19 }) {
+  const Icon = ICONS[module] ?? Activity;
+  return (
+    <span className={`module-icon mod-${module}`}>
+      <Icon size={size} />
+    </span>
+  );
+}
+function Header({ city, setCityId, page, onNavigateRoute }) {
   const hazard = HAZARD_MODULES.find((module) => module.id === page);
   return (
-    <header className={`topbar ${hazard ? 'has-module-tabs' : ''}`}>
-      <div className="top-left">
-        <button className="mobile-menu icon-button" onClick={onMenu} aria-label="Open menu"><Menu size={21} /></button>
-        <div className="breadcrumbs">
-          <span>City Operations</span><ChevronRight size={15} />
-          <strong>{page === 'overview' ? 'Overview' : page === 'incidents' ? 'Incident center' : page === 'devices' ? 'Connected devices' : page === 'settings' ? 'Settings' : typeName(page)}</strong>
-        </div>
+    <header className={`topbar ${hazard ? "has-module-tabs" : ""}`}>
+      <div className="breadcrumbs">
+        <span>City Operations</span>
+        <ChevronRight size={15} />
+        <strong>
+          {page === "settings" ? "Settings" : MODULES.find((module) => module.id === page)?.name}
+        </strong>
       </div>
-      {hazard && <ModuleTabs module={hazard} route={hazard.routes.live} onNavigate={onNavigateRoute} />}
-      <div className="top-actions">
-        <div className="search-wrap">
-          <button className="search-button" onClick={() => setSearchOpen(value => !value)}><Search size={17} /><span>Search platform</span><kbd>⌘ K</kbd></button>
-          {searchOpen && <div className="search-pop"><p>Quick navigation</p>{[['overview', 'Overview'], ...MODULE_KEYS.map(id => [id, typeName(id)])].map(([id, name]) =>
-            <button key={id} onClick={() => { document.dispatchEvent(new CustomEvent('cn:navigate', { detail: id })); setSearchOpen(false); }}>{name}<ArrowRight size={14} /></button>
-          )}</div>}
-        </div>
-        <div className="city-select"><MapPin size={15} /><select aria-label="Select city" value={city.id} onChange={event => setCityId(event.target.value)}>{CITIES.map(item => <option key={item.id} value={item.id}>{item.label}, {item.country === 'Slovakia' ? 'SK' : item.country === 'Spain' ? 'ES' : 'NL'}</option>)}</select><ChevronDown size={14} /></div>
-        <button className="notification-button icon-button" title={`${incidents.length} demo incidents`} onClick={() => document.dispatchEvent(new CustomEvent('cn:navigate', { detail: 'incidents' }))}><Bell size={19} /><i /></button>
-        <div className="avatar" title="Demo operator">CN</div>
+      {hazard && (
+        <ModuleTabs module={hazard} route={hazard.routes.live} onNavigate={onNavigateRoute} />
+      )}
+      <div className="city-select">
+        <MapPin size={15} />
+        <select
+          aria-label="Select city"
+          value={city.id}
+          onChange={(event) => setCityId(event.target.value)}
+        >
+          {CITIES.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.label}, {item.country}
+            </option>
+          ))}
+        </select>
       </div>
     </header>
   );
 }
-function StatCard({ label, value, trend, foot, icon:Icon, tone='blue' }) { return <div className="stat-card"><div className="stat-top"><span>{label}</span><span className={`stat-icon stat-${tone}`}><Icon size={19}/></span></div><div className="stat-value">{value}</div><div className="stat-foot"><span className="stat-mini">{trend}</span> {foot}</div></div> }
-function CityMap({ city, incidents, onIncident }) {
-  const markers = [
-    {x:28,y:37,type:'flood',t:'Flood sensor',color:'blue'},
-    {x:67,y:29,type:'fog',t:'Visibility station',color:'purple'},
-    {x:48,y:71,type:'mobility',t:'Smart parking',color:'teal'},
-    {x:80,y:62,type:'heat',t:'Heat monitor',color:'orange'},
-  ];
-  return <div className="map-panel"><div className="map-top-overlay"><span><span className="tiny-live"/> CITY GRID · {city.label.toUpperCase()}</span><span>SIMULATED MAP</span></div>
-    <svg className="map-illustration" viewBox="0 0 900 490" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Illustrative stylized street grid for demo incident markers"><defs><pattern id="blockpattern" width="145" height="110" patternUnits="userSpaceOnUse"><rect width="145" height="110" fill="#131f30"/><rect x="13" y="12" width="52" height="37" rx="4" fill="#1c2d3e"/><rect x="76" y="12" width="51" height="37" rx="4" fill="#1c2d3e"/><rect x="15" y="62" width="32" height="34" rx="3" fill="#203447"/><rect x="56" y="62" width="72" height="34" rx="3" fill="#203447"/><path d="M0 55H145 M70 0V110" stroke="#304354" strokeWidth="9"/><path d="M0 55H145 M70 0V110" stroke="#7c8a96" strokeWidth="1" strokeDasharray="6 8" opacity=".4"/></pattern><linearGradient id="river" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#1f6989"/><stop offset="1" stopColor="#124a71"/></linearGradient></defs><rect width="900" height="490" fill="url(#blockpattern)"/><path d="M-25 350 C 100 270 240 375 337 280 C 455 160 530 295 665 190 C 760 105 845 180 930 80" stroke="#0c394f" strokeWidth="62" fill="none"/><path d="M-25 350 C 100 270 240 375 337 280 C 455 160 530 295 665 190 C 760 105 845 180 930 80" stroke="url(#river)" strokeWidth="47" fill="none"/><path d="M-25 350 C 100 270 240 375 337 280 C 455 160 530 295 665 190 C 760 105 845 180 930 80" stroke="#3b9db5" strokeWidth="1.5" fill="none" strokeDasharray="10 10" opacity=".5"/><rect x="480" y="340" width="210" height="100" rx="18" fill="#172a33" opacity=".7"/><circle cx="565" cy="385" r="28" fill="#1b3e3a"/><circle cx="610" cy="385" r="24" fill="#1b3e3a"/><text x="360" y="75" fill="#647e8d" fontSize="15" letterSpacing="4">CITY CENTER</text><text x="75" y="435" fill="#647e8d" fontSize="13" letterSpacing="3">RIVERSIDE DISTRICT</text><text x="695" y="430" fill="#647e8d" fontSize="13" letterSpacing="3">EAST DISTRICT</text></svg>
-    {markers.map(m=>{const Icon=ICONS[m.type];return <button key={m.type} className={`map-pin pin-${m.color}`} style={{left:`${m.x}%`,top:`${m.y}%`}} onClick={()=>onIncident(m.type)} title={`${m.t} — simulated`}><Icon size={17}/></button>})}
-    {incidents.length>3&&<span className="map-incident-indicator"><Siren size={13}/> {incidents.length-3} scenario(s) triggered</span>}
-    <div className="map-legend"><span><i className="legend-circle blue"/> Flood</span><span><i className="legend-circle purple"/> Fog</span><span><i className="legend-circle orange"/> Heat</span><span><i className="legend-circle teal"/> Mobility</span></div>
-  </div>;
-}
-function IncidentList({ incidents, compact=false }) {return <div className="incident-list">{incidents.slice(0,compact?4:undefined).map(item=>{const Icon=ICONS[item.type]??Siren;return <div className="incident-row" key={item.id}><span className={`incident-icon incident-${item.type}`}><Icon size={18}/></span><div className="incident-content"><div className="incident-title">{item.title}</div><div className="incident-meta"><MapPin size={12}/>{item.location} · {item.time} · {item.source}</div></div><div className="incident-right"><Tag variant={item.severity==='high'?'red':item.severity==='medium'?'amber':'neutral'}>{item.severity}</Tag><span className="incident-status">{item.status}</span></div></div>})}{!incidents.length&&<p className="empty-state">No incidents recorded.</p>}</div>}
-function Overview({ city, incidents, setPage, triggerScenario }) {return <>
-    <div className="page-heading"><div><div className="eyebrow">CITY OPERATIONS / LIVE OVERVIEW</div><h1>City intelligence overview <span className="heading-pulse"><StatusDot/> Demo</span></h1><p>Monitor urban infrastructure, assess risks, and coordinate smarter responses.</p></div><button className="outline-action" onClick={()=>setPage('incidents')}><Siren size={16}/> Incident center <ArrowUpRight size={16}/></button></div>
-    <div className="stats-grid"><StatCard label="Connected modules" value="05" icon={Layers3} foot="All configured" trend="↗ Active" tone="blue"/><StatCard label="Active incidents" value={String(incidents.length).padStart(2,'0')} icon={Siren} foot="In demo workspace" trend="↗ Tracking" tone="orange"/><StatCard label="City temperature" value={`${city.temperature}°C`} icon={ThermometerSun} foot="Sample reading" trend="• Demo" tone="rose"/><StatCard label="Sensor availability" value="100%" icon={Wifi} foot="Simulated connections" trend="✓ Online" tone="teal"/></div>
-    <div className="overview-grid"><section className="panel map-section"><div className="panel-header"><div><h2><Map size={18}/> City intelligence map</h2><p>Sensor locations and reported infrastructure events</p></div><button className="subtle-button" onClick={()=>setPage('incidents')}>View incidents <ArrowUpRight size={15}/></button></div><CityMap city={city} incidents={incidents} onIncident={setPage}/></section><section className="panel activity-panel"><div className="panel-header"><div><h2><Activity size={18}/> System status</h2><p>Modules operating in demo mode</p></div><MoreHorizontal size={19} className="muted-icon"/></div><div className="system-list">{MODULES.map(m=><button key={m.id} className="system-row" onClick={()=>setPage(m.id)}><ModuleIcon module={m.id}/><span className="system-row-label"><strong>{m.name}</strong><small>{m.description}</small></span><StatusDot/><ChevronRight size={15}/></button>)}</div><div className="demo-note"><ShieldCheck size={17}/><span>Safe demonstration mode<br/><small>No real-world city infrastructure is controlled.</small></span></div></section></div>
-    <div className="bottom-grid"><section className="panel incidents-panel"><div className="panel-header"><div><h2><Bell size={18}/> Recent incidents</h2><p>Latest events across connected modules</p></div><button className="subtle-button" onClick={()=>setPage('incidents')}>View all <ArrowRight size={15}/></button></div><IncidentList incidents={incidents} compact/></section><section className="panel quick-panel"><div className="panel-header"><div><h2><Command size={18}/> Scenario laboratory</h2><p>Test cross-module responses instantly</p></div></div><div className="scenario-grid">{Object.entries(SCENARIOS).map(([key,s])=>{const Icon=ICONS[key==='parking'?'mobility':key];return <button className="scenario-button" key={key} onClick={()=>triggerScenario(key)}><Icon size={18}/><span>{key==='parking'?'Parking full':key==='flood'?'Flood event':key==='fog'?'Dense fog':'Heat alert'}</span><ArrowUpRight size={15}/></button>})}</div><div className="scenario-foot"><CircleHelp size={15}/> Scenarios generate clearly labeled synthetic incidents.</div></section></div>
-  </>}
-function ModulePage({ type, city, incidents, triggerScenario, setPage }) {
-  const module=MODULES.find(m=>m.id===type);
-  const Icon=ICONS[type];
-  const configs={
-    flood:{eyebrow:'HYDROLOGICAL INTELLIGENCE', headline:'Flood monitoring & prevention', text:'Monitor forecast rainfall and local water sensors. Coordinate safe preparation of flood barriers and road advisories.', measure:`${city.rainfall} mm`, measureLabel:'Sample rainfall reading', action:'Trigger flood scenario', scenario:'flood', capabilities:['Rainfall and river risk ingestion','Local water-level monitoring','Barrier safety-check workflow','Flood impact event generation'], next:'Connect Open-Meteo precipitation data, then add your ESP32 water sensor and miniature barrier.'},
-    fog:{eyebrow:'ROAD WEATHER INTELLIGENCE', headline:'Visibility monitoring & road safety', text:'Detect poor visibility, flag hazardous corridors, and coordinate warning signage with mobility and citizen alerts.', measure:`${city.visibility} m`, measureLabel:'Sample visibility reading', action:'Trigger fog scenario', scenario:'fog', capabilities:['Forecast visibility ingestion','Low-visibility thresholds','Digital road sign simulation','Connected road hazard alerts'], next:'Connect Open-Meteo visibility forecasts and add an LED warning sign.'},
-    heat:{eyebrow:'CLIMATE RESILIENCE', headline:'Urban heat protection', text:'Track thermal exposure and coordinate heat-risk communication, public guidance and cooling points.', measure:`${city.temperature}°C`, measureLabel:'Sample air temperature', action:'Trigger heat scenario', scenario:'heat', capabilities:['Temperature and apparent heat','Heat-risk severity rules','Public heat advisories','Cooling location layer'], next:'Connect apparent temperature and forecast from Open-Meteo; add verified cooling places.'},
-    mobility:{eyebrow:'SMART URBAN MOBILITY', headline:'Traffic, roads & parking', text:'Monitor parking demand, connect road closures to weather incidents, and communicate mobility disruptions.', measure:`${city.occupancy}%`, measureLabel:'Simulated parking occupancy', action:'Trigger parking scenario', scenario:'parking', capabilities:['Parking zone inventory','Simulated occupancy inputs','Weather-linked road closures','City mobility warnings'], next:'Add parking areas from OpenStreetMap; occupancy should remain labeled simulated unless sensor-backed.'},
-    alert:{eyebrow:'PUBLIC COMMUNICATION', headline:'Coordinated incident communication', text:'Turn events from every CityNerve module into one consistent timeline and public/operator communications.', measure:`${incidents.length}`, measureLabel:'Demo incidents in workspace', action:'Open incident center', scenario:null, capabilities:['Shared incident event schema','Draft public safety messages','Cross-module event activity','Incident tracking and history'], next:'Connect incident storage in Cloudflare D1 and add Slovak/English message templates.'},
+function ModulePage({ type, city }) {
+  const module = MODULES.find((m) => m.id === type);
+  const Icon = ICONS[type];
+  const configs = {
+    flood: {
+      eyebrow: "HYDROLOGICAL INTELLIGENCE",
+      headline: "Flood monitoring & prevention",
+      text: "Monitor forecast rainfall and local water sensors. Coordinate safe preparation of flood barriers and road advisories.",
+      measure: `${city.rainfall} mm`,
+      measureLabel: "Sample rainfall reading",
+      capabilities: [
+        "Rainfall and river risk ingestion",
+        "Local water-level monitoring",
+        "Barrier safety-check workflow",
+        "Flood impact event generation",
+      ],
+      next: "Connect Open-Meteo precipitation data, then add your ESP32 water sensor and miniature barrier.",
+    },
+    fog: {
+      eyebrow: "ROAD WEATHER INTELLIGENCE",
+      headline: "Visibility monitoring & road safety",
+      text: "Detect poor visibility, flag hazardous corridors, and coordinate warning signage with mobility and citizen alerts.",
+      measure: `${city.visibility} m`,
+      measureLabel: "Sample visibility reading",
+      capabilities: [
+        "Forecast visibility ingestion",
+        "Low-visibility thresholds",
+        "Digital road sign simulation",
+        "Connected road hazard alerts",
+      ],
+      next: "Connect Open-Meteo visibility forecasts and add an LED warning sign.",
+    },
+    heat: {
+      eyebrow: "CLIMATE RESILIENCE",
+      headline: "Urban heat protection",
+      text: "Track thermal exposure and coordinate heat-risk communication, public guidance and cooling points.",
+      measure: `${city.temperature}°C`,
+      measureLabel: "Sample air temperature",
+      capabilities: [
+        "Temperature and apparent heat",
+        "Heat-risk severity rules",
+        "Public heat advisories",
+        "Cooling location layer",
+      ],
+      next: "Connect apparent temperature and forecast from Open-Meteo; add verified cooling places.",
+    },
+    mobility: {
+      eyebrow: "SMART URBAN MOBILITY",
+      headline: "Traffic, roads & parking",
+      text: "Monitor parking demand, connect road closures to weather incidents, and communicate mobility disruptions.",
+      measure: `${city.occupancy}%`,
+      measureLabel: "Simulated parking occupancy",
+      capabilities: [
+        "Parking zone inventory",
+        "Simulated occupancy inputs",
+        "Weather-linked road closures",
+        "City mobility warnings",
+      ],
+      next: "Add parking areas from OpenStreetMap; occupancy should remain labeled simulated unless sensor-backed.",
+    },
   };
-  const conf=configs[type];
-  const related=incidents.filter(i=>i.type===type);
-  return <><div className="page-heading"><div><div className="eyebrow">MODULES / {conf.eyebrow}</div><div className="module-heading"><ModuleIcon module={type} size={25}/><h1>{module.name}</h1><Tag variant="blue">Framework ready</Tag></div><p>{conf.text}</p></div><button className="outline-action" onClick={()=>setPage('overview')}><LayoutDashboard size={16}/> Overview</button></div>
-    <div className="module-hero"><div className="hero-content"><div className="hero-eyebrow">MODULE CONTROL PANEL <span>•</span> {city.label.toUpperCase()}</div><h2>{conf.headline}</h2><p>Connect your first real data source when you're ready. All readings currently come from local demo configuration.</p><div className="hero-actions"><button className="primary-action" onClick={()=>conf.scenario?triggerScenario(conf.scenario):setPage('incidents')}>{conf.action}<ArrowRight size={16}/></button><span><StatusDot color="amber"/> Demo data only</span></div></div><div className="hero-orbit"><div className="orbit-ring orbit-a"/><div className="orbit-ring orbit-b"/><div className={`orbit-center mod-${type}`}><Icon size={60}/></div><i className="orbit-node node-one"/><i className="orbit-node node-two"/><i className="orbit-node node-three"/></div></div>
-    <div className="module-summary-grid"><div className="panel metric-panel"><span className="mini-label">CURRENT MEASUREMENT</span><div className="metric-number">{conf.measure}</div><p>{conf.measureLabel} · {city.label}</p><Tag>Demonstration only</Tag></div><div className="panel metric-panel"><span className="mini-label">MODULE STATUS</span><div className="metric-status"><StatusDot/> Connected</div><p>Module UI and event definitions initialized</p><Tag variant="green">Ready for integration</Tag></div><div className="panel metric-panel"><span className="mini-label">RELATED INCIDENTS</span><div className="metric-number">{related.length}</div><p>Recorded sample and demo events</p><button className="text-action" onClick={()=>setPage('incidents')}>View incident center <ArrowRight size={15}/></button></div></div>
-    <div className="module-lower"><section className="panel"><div className="panel-header"><div><h2><Layers3 size={18}/> Planned capabilities</h2><p>Integration milestones for this module</p></div></div><div className="capability-list">{conf.capabilities.map((x,i)=><div className="capability" key={x}><span className="cap-number">0{i+1}</span><span>{x}</span><Tag variant="neutral">Planned</Tag></div>)}</div><div className="module-next"><strong><ArrowUpRight size={17}/> Suggested next step</strong><p>{conf.next}</p></div></section><section className="panel"><div className="panel-header"><div><h2><Activity size={18}/> Module activity</h2><p>Events connected to {module.name}</p></div></div>{related.length?<IncidentList incidents={related}/>:<div className="empty-module"><Radio size={30}/><h3>No activity yet</h3><p>Trigger a demo scenario to generate your first event.</p></div>}</section></div>
-  </>;
+  const conf = configs[type];
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">MODULES / {conf.eyebrow}</div>
+          <div className="module-heading">
+            <ModuleIcon module={type} size={25} />
+            <h1>{module.name}</h1>
+            <Tag variant="blue">Framework ready</Tag>
+          </div>
+          <p>{conf.text}</p>
+        </div>
+      </div>
+      <div className="module-hero">
+        <div className="hero-content">
+          <div className="hero-eyebrow">
+            MODULE CONTROL PANEL <span>•</span> {city.label.toUpperCase()}
+          </div>
+          <h2>{conf.headline}</h2>
+          <p>
+            Connect your first real data source when you're ready. All readings currently come from
+            local demo configuration.
+          </p>
+        </div>
+        <div className="hero-orbit">
+          <div className="orbit-ring orbit-a" />
+          <div className="orbit-ring orbit-b" />
+          <div className={`orbit-center mod-${type}`}>
+            <Icon size={60} />
+          </div>
+          <i className="orbit-node node-one" />
+          <i className="orbit-node node-two" />
+          <i className="orbit-node node-three" />
+        </div>
+      </div>
+      <div className="module-summary-grid">
+        <div className="panel metric-panel">
+          <span className="mini-label">CURRENT MEASUREMENT</span>
+          <div className="metric-number">{conf.measure}</div>
+          <p>
+            {conf.measureLabel} · {city.label}
+          </p>
+          <Tag>Demonstration only</Tag>
+        </div>
+        <div className="panel metric-panel">
+          <span className="mini-label">MODULE STATUS</span>
+          <div className="metric-status">
+            <StatusDot /> Connected
+          </div>
+          <p>Module UI and event definitions initialized</p>
+          <Tag variant="green">Ready for integration</Tag>
+        </div>
+      </div>
+      <div className="module-lower">
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>
+                <Layers3 size={18} /> Planned capabilities
+              </h2>
+              <p>Integration milestones for this module</p>
+            </div>
+          </div>
+          <div className="capability-list">
+            {conf.capabilities.map((x, i) => (
+              <div className="capability" key={x}>
+                <span className="cap-number">0{i + 1}</span>
+                <span>{x}</span>
+                <Tag variant="neutral">Planned</Tag>
+              </div>
+            ))}
+          </div>
+          <div className="module-next">
+            <strong>
+              <ArrowUpRight size={17} /> Suggested next step
+            </strong>
+            <p>{conf.next}</p>
+          </div>
+        </section>
+      </div>
+    </>
+  );
 }
-function IncidentsPage({ incidents, clearDemo }) {const [filter,setFilter]=useState('all');const shown=filter==='all'?incidents:incidents.filter(x=>x.severity===filter);return <><div className="page-heading"><div><div className="eyebrow">CITY OPERATIONS / INCIDENT CENTER</div><h1>Incident center</h1><p>One unified activity stream for all CityNerve modules.</p></div><button className="outline-action" onClick={clearDemo}><RefreshCw size={16}/> Reset to sample data</button></div><section className="panel full-panel"><div className="panel-header"><div><h2>All events <span className="count-inline">{shown.length}</span></h2><p>Includes sample readings and triggered demonstration events</p></div><div className="filter-buttons">{['all','high','medium','low'].map(x=><button className={filter===x?'selected':''} onClick={()=>setFilter(x)} key={x}>{x==='all'?'All':x[0].toUpperCase()+x.slice(1)}</button>)}</div></div><IncidentList incidents={shown}/></section></>}
-function DevicesPage(){return <><div className="page-heading"><div><div className="eyebrow">SYSTEM / DEVICE NETWORK</div><h1>Connected devices</h1><p>Device management UI prepared for ESP32 and other IoT integrations.</p></div></div><section className="panel full-panel"><div className="panel-header"><div><h2>Device registry</h2><p>Illustrative hardware configuration — no real devices connected</p></div><Tag variant="amber">Simulation</Tag></div><div className="device-table"><div className="device-header"><span>DEVICE</span><span>MODULE</span><span>CONNECTION</span><span>STATE</span></div>{[['CN-WTR-01','Water-level sensor','FloodNerve'],['CN-GATE-01','Flood barrier servo','FloodNerve'],['CN-VIS-01','Visibility sensor','FogNerve'],['CN-SIGN-01','Road warning sign','FogNerve'],['CN-PARK-01','Parking occupancy','MobilityNerve']].map(([id,name,mod])=><div className="device-entry" key={id}><span><Radio size={17}/><strong>{id}</strong><small>{name}</small></span><span>{mod}</span><span>Not paired</span><span><Tag>Placeholder</Tag></span></div>)}</div></section></>}
-function SettingsPage({ city, cityId, setCityId }){return <><div className="page-heading"><div><div className="eyebrow">SYSTEM / SETTINGS</div><h1>Workspace settings</h1><p>Configuration for your CityNerve demonstration environment.</p></div></div><section className="panel settings-panel"><h2>City configuration</h2><p>Select which European city your demo is currently representing.</p><label htmlFor="settings-city">Active city</label><select id="settings-city" value={cityId} onChange={e=>setCityId(e.target.value)}>{CITIES.map(c=><option key={c.id} value={c.id}>{c.label}, {c.country}</option>)}</select><div className="settings-line"><span>Region</span><strong>{city.region}</strong></div><div className="settings-line"><span>Data mode</span><Tag variant="amber">Simulated / sample</Tag></div><div className="settings-line"><span>Connected APIs</span><strong>None yet</strong></div><div className="settings-line"><span>Environment</span><strong>Hackathon development</strong></div></section></>}
-function Toast({ message, dismiss }){return message?<div className="toast"><span className="toast-symbol"><Check size={18}/></span><div><strong>Scenario activated</strong><small>{message}</small></div><button onClick={dismiss} aria-label="Dismiss notification"><X size={17}/></button></div>:null}
-export default function LegacyApp({ page, setPage, onNavigateRoute }){
-  const [cityId,setCityId]=useState('michalovce');
-  const [incidents,setIncidents]=useState(INITIAL_INCIDENTS);
-  const [mobileOpen,setMobileOpen]=useState(false);
-  const [toast,setToast]=useState('');
-  const city=CITIES.find(c=>c.id===cityId)||CITIES[0];
-  React.useEffect(()=>{const fn=e=>setPage(e.detail);document.addEventListener('cn:navigate',fn);return()=>document.removeEventListener('cn:navigate',fn)},[]);
-  function triggerScenario(key){const s=SCENARIOS[key];if(!s)return;const entry={id:`CN-${Date.now().toString().slice(-7)}`,type:key==='parking'?'mobility':key,title:s.title,location:s.location,severity:s.severity,status:'New',time:nowTime(),source:'Simulated scenario'};setIncidents(old=>[entry,...old]);setToast(`${s.title} — ${s.effects.join(' · ')}`);}
-  const clearDemo=()=>{setIncidents(INITIAL_INCIDENTS);setToast('Incident list reset to initial sample data.')};
-  return <div className="legacy"><div className="app-shell"><div className="main-area"><Header city={city} setCityId={setCityId} page={page} onMenu={()=>setMobileOpen(true)} incidents={incidents} onNavigateRoute={onNavigateRoute}/><main className="content"><div className="content-inner">{page==='overview'?<Overview city={city} incidents={incidents} setPage={setPage} triggerScenario={triggerScenario}/>:MODULE_KEYS.includes(page)?<ModulePage type={page} city={city} incidents={incidents} setPage={setPage} triggerScenario={triggerScenario}/>:page==='incidents'?<IncidentsPage incidents={incidents} clearDemo={clearDemo}/>:page==='devices'?<DevicesPage/>:<SettingsPage city={city} cityId={cityId} setCityId={setCityId}/>}<footer className="app-footer"><span>© 2026 CityNerve · Hackathon starter</span><span>European cities, connected. <span className="footer-sep">·</span> <strong>DEMO DATA</strong></span></footer></div></main></div><Toast message={toast} dismiss={()=>setToast('')}/></div></div>;
+function SettingsPage({ city, cityId, setCityId }) {
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">SYSTEM / SETTINGS</div>
+          <h1>Workspace settings</h1>
+          <p>Configuration for your CityNerve demonstration environment.</p>
+        </div>
+      </div>
+      <section className="panel settings-panel">
+        <h2>City configuration</h2>
+        <p>Select which European city your demo is currently representing.</p>
+        <label htmlFor="settings-city">Active city</label>
+        <select id="settings-city" value={cityId} onChange={(e) => setCityId(e.target.value)}>
+          {CITIES.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}, {c.country}
+            </option>
+          ))}
+        </select>
+        <div className="settings-line">
+          <span>Region</span>
+          <strong>{city.region}</strong>
+        </div>
+        <div className="settings-line">
+          <span>Data mode</span>
+          <Tag variant="amber">Simulated / sample</Tag>
+        </div>
+        <div className="settings-line">
+          <span>Connected APIs</span>
+          <strong>None yet</strong>
+        </div>
+        <div className="settings-line">
+          <span>Environment</span>
+          <strong>Hackathon development</strong>
+        </div>
+      </section>
+    </>
+  );
+}
+export default function LegacyApp({ page, onNavigateRoute }) {
+  const [cityId, setCityId] = useState("michalovce");
+  const city = CITIES.find((item) => item.id === cityId) || CITIES[0];
+  return (
+    <div className="legacy">
+      <div className="app-shell">
+        <div className="main-area">
+          <Header city={city} setCityId={setCityId} page={page} onNavigateRoute={onNavigateRoute} />
+          <main className="content">
+            <div className="content-inner">
+              {MODULE_KEYS.includes(page) ? (
+                <ModulePage type={page} city={city} />
+              ) : page === "settings" ? (
+                <SettingsPage city={city} cityId={cityId} setCityId={setCityId} />
+              ) : null}
+              <footer className="app-footer">
+                <span>© 2026 CityNerve</span>
+              </footer>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
 }

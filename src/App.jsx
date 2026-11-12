@@ -28,14 +28,10 @@ import {
   Check,
   Loader2,
   TriangleAlert,
-  LayoutDashboard,
-  Siren,
   CloudRain as RainIcon,
   CloudFog,
   ThermometerSun,
   CarFront,
-  BellRing,
-  Radio,
   Settings2,
   PanelLeftClose,
   PanelLeftOpen,
@@ -46,10 +42,18 @@ import {
   Maximize2,
 } from "lucide-react";
 import MobilityPage from "./MobilityPage.jsx";
-import AlertsPage from "./AlertsPage.jsx";
 import HeatPage from "./HeatPage.jsx";
 import FloodMap from "./FloodMap.jsx";
-import { CITY, REGIONS, RISK, CAUSE, HAZARD_MODULES, getHazardModuleForRoute, riskLevel, PIPELINE } from "./data.js";
+import {
+  CITY,
+  REGIONS,
+  RISK,
+  CAUSE,
+  HAZARD_MODULES,
+  getHazardModuleForRoute,
+  riskLevel,
+  PIPELINE,
+} from "./data.js";
 import { useFloodData } from "./useFloodData.js";
 import {
   loadDam,
@@ -137,16 +141,12 @@ const HAZARD_ICONS = { flood: RainIcon, fog: CloudFog, heat: ThermometerSun };
 const RAIL_GROUPS = [
   {
     items: [
-      ["l-overview", "Overview", LayoutDashboard],
-      ["l-incidents", "Incidents", Siren],
-      ["l-alert", "Alerts", BellRing],
-    ],
-  },
-  { items: HAZARD_MODULES.map((module) => [module.routes.map, module.navLabel, HAZARD_ICONS[module.icon]]) },
-  {
-    items: [
+      ...HAZARD_MODULES.map((module) => [
+        module.routes.map,
+        module.navLabel,
+        HAZARD_ICONS[module.icon],
+      ]),
       ["l-mobility", "Mobility", CarFront],
-      ["l-devices", "Devices", Radio],
     ],
   },
 ];
@@ -1459,7 +1459,11 @@ function SourcesPage({ data, onNavigate }) {
 }
 
 export default function App() {
-  const [page, setPage] = useState(() => window.location.hash.slice(1) || "map"); // e.g. #heat-map
+  const [page, setPage] = useState(() =>
+    ["l-overview", "l-incidents", "l-alert", "l-devices"].includes(window.location.hash.slice(1))
+      ? "map"
+      : window.location.hash.slice(1) || "map",
+  ); // e.g. #heat-map
   const [region, setRegion] = useState("sofia");
   const [railExpanded, setRailExpanded] = useState(false);
   const data = useFloodData(region);
@@ -1467,24 +1471,18 @@ export default function App() {
     <div className={`shell ${railExpanded ? "rail-expanded" : ""}`}>
       <Rail page={page} setPage={setPage} expanded={railExpanded} setExpanded={setRailExpanded} />
       <main className={`main main-${page}`}>
-        {page === "map" && <MapPage data={data} region={region} setRegion={setRegion} onNavigate={setPage} />}
+        {page === "map" && (
+          <MapPage data={data} region={region} setRegion={setRegion} onNavigate={setPage} />
+        )}
         {page === "register" && <RegisterPage data={data} onNavigate={setPage} />}
         {page === "sources" && <SourcesPage data={data} onNavigate={setPage} />}
         {page === "l-heat" && <HeatPage onNavigate={setPage} />}
         {page === "l-mobility" && <MobilityPage />}
-        {page === "l-alert" && <AlertsPage />}
         {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
         {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
-        {page !== "l-heat" &&
-          page !== "l-mobility" &&
-          page !== "l-alert" &&
-          page.startsWith("l-") && (
-            <LegacyApp
-              page={page.slice(2)}
-              setPage={(id) => setPage(id === "fog" ? "fog-map" : "l-" + id)}
-              onNavigateRoute={setPage}
-            />
-          )}
+        {page !== "l-heat" && page !== "l-mobility" && page.startsWith("l-") && (
+          <LegacyApp page={page.slice(2)} onNavigateRoute={setPage} />
+        )}
       </main>
     </div>
   );

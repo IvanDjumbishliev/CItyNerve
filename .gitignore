@@ -37,6 +37,3 @@ __pycache__/
 # Local previews and temporary branch imports
 /artifacts/
 /data/processed/import-*/
-
-# Shared incident responses, quota ledger and locks
-/.cache/alerts/

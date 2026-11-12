@@ -2,7 +2,6 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
 import { parkingMiddleware } from "./parking.js";
-import { alertsMiddleware } from "./alerts.js";
 const root = resolve("dist");
 const types = {
   ".html": "text/html",
@@ -13,26 +12,24 @@ const types = {
   ".geojson": "application/geo+json",
 };
 createServer((req, res) =>
-  parkingMiddleware(req, res, () =>
-    alertsMiddleware(req, res, async () => {
-      try {
-        const path = resolve(
-          root,
-          "." + decodeURIComponent(new URL(req.url, "http://localhost").pathname),
-        );
-        if (path !== root && !path.startsWith(root + sep)) {
-          res.writeHead(403);
-          res.end();
-          return;
-        }
-        const target = extname(path) ? path : resolve(root, "index.html");
-        const body = await readFile(target);
-        res.setHeader("Content-Type", types[extname(target)] || "application/octet-stream");
-        res.end(body);
-      } catch {
-        res.writeHead(404);
+  parkingMiddleware(req, res, async () => {
+    try {
+      const path = resolve(
+        root,
+        "." + decodeURIComponent(new URL(req.url, "http://localhost").pathname),
+      );
+      if (path !== root && !path.startsWith(root + sep)) {
+        res.writeHead(403);
         res.end();
+        return;
       }
-    }),
-  ),
+      const target = extname(path) ? path : resolve(root, "index.html");
+      const body = await readFile(target);
+      res.setHeader("Content-Type", types[extname(target)] || "application/octet-stream");
+      res.end(body);
+    } catch {
+      res.writeHead(404);
+      res.end();
+    }
+  }),
 ).listen(Number(process.env.PORT) || 3000);

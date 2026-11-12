@@ -71,14 +71,12 @@ Real inputs, no logins: **Landsat 8/9 Collection 2 Level-2** surface temperature
 
 - `GET /api/cities`
 - `GET /api/weather?cityId=michalovce`
-- `GET /api/incidents?cityId=michalovce`
 - `POST /api/events` (authenticated / validated)
-- `GET /api/devices?cityId=michalovce`
 - `POST /api/demo/scenarios` (restricted to demo environment)
 
 ## Recommended next step
 
-Build CityNerve Core + AlertNerve first (shared events and incident database), then FloodNerve. The five tabs can be implemented independently after shared event schemas are stable.
+Build CityNerve Core first (shared events and incident database), then FloodNerve. The remaining tabs can be implemented independently after shared event schemas are stable.
 
 ## Safety
 
