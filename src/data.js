@@ -44,6 +44,18 @@ export const HAZARD_MODULES = [
       live: 'l-heat',
     },
   },
+  {
+    id: 'air',
+    name: 'AirNerve',
+    navLabel: 'Air',
+    icon: 'air',
+    routes: {
+      map: 'air-map',
+      register: 'air-register',
+      sources: 'air-sources',
+      live: 'l-air',
+    },
+  },
 ];
 
 export const getHazardModuleForRoute = (route) =>

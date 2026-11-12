@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { parkingPlugin } from "./server/parking.js";
+import { airPlugin } from "./server/air.js";
 export default defineConfig({
-  plugins: [react(), parkingPlugin],
+  plugins: [react(), parkingPlugin, airPlugin],
 });

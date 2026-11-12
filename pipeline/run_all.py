@@ -11,6 +11,7 @@ STEPS = ["fetch_dem.py", "fetch_landcover.py", "fetch_power.py", "fetch_imerg.py
          "fetch_pernik.py", "fetch_studena_s2.py", "fetch_moew.py", "model_dambreak.py"]
 FLOOD = ["fetch_dem.py", "fetch_landcover.py", "fetch_power.py", "fetch_imerg.py", "fetch_era5.py", "fetch_icesat2.py", "model.py"]
 FOG = ["fetch_fog_inputs.py", "fetch_fog_roads.py", "fog_model.py"]
+AIR = ["fetch_air_inputs.py", "fetch_air_sites.py", "air_model.py"]
 
 base = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
 for s in STEPS:                       # Sofia flood model + Studena dam scenario
@@ -21,4 +22,7 @@ for s in FLOOD:                       # Pernik flood model (same method, Pernik 
     subprocess.run([sys.executable, s], cwd=HERE, env={**base, "REGION": "pernik"}, check=True)
 for s in FOG:                          # Sofia fog observations and screening model
     print(f"\n=== fog: {s} ===", flush=True)
+    subprocess.run([sys.executable, s], cwd=HERE, env=base, check=True)
+for s in AIR:                          # Sofia air-quality history, sensor factor and hotspots
+    print(f"\n=== air: {s} ===", flush=True)
     subprocess.run([sys.executable, s], cwd=HERE, env=base, check=True)

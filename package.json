@@ -10,6 +10,8 @@
     "data": "node pipeline/run_all.mjs",
     "data:fog": "node pipeline/run_fog.mjs",
     "data:heat": "node pipeline/run_heat.mjs",
+    "data:air": "node pipeline/run_air.mjs",
+    "test": "node --test tests/*.test.js",
     "start": "node server/start.js"
   },
   "dependencies": {
