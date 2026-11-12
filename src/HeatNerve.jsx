@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import HeatMap, { SUHI_STOPS, LST_STOPS, HEAT_VIEW } from './HeatMap.jsx';
 import { useHeatData } from './useHeatData.js';
+import ModuleTabs from './ModuleTabs.jsx';
 import { RISK, riskLevel } from './data.js';
 
 const TZ = 'Europe/Sofia';
@@ -191,11 +192,7 @@ function HeatTopBar({ hotspots, onSelect, toggleDock, toggleLens, onNavigate }) 
         {!results.length && <p className="muted">No results</p>}
       </div>}
     </div>
-    <nav className="fog-page-nav heat-page-nav" aria-label="HeatNerve pages">
-      <button onClick={() => onNavigate('heat-map')}>Map</button>
-      <button onClick={() => onNavigate('heat-register')}>Heat risk</button>
-      <button onClick={() => onNavigate('heat-sources')}>Data &amp; model</button>
-    </nav>
+    <ModuleTabs module="heat" route="heat-map" onNavigate={onNavigate} />
     <div className="top-actions">
       <button className="ghost-btn glass mobile-only" onClick={toggleDock} aria-label="Passes and layers"><Satellite size={15} /></button>
       <button className="ghost-btn glass mobile-only" onClick={toggleLens} aria-label="Details"><PanelRightOpen size={15} /></button>
@@ -241,14 +238,15 @@ function HeatMapPage({ data, onNavigate }) {
 }
 
 /* ───────────── register ───────────── */
-function HeatRegisterPage({ data }) {
+function HeatRegisterPage({ data, onNavigate }) {
   const { summary, hotspots } = data;
   const [filter, setFilter] = useState('all');
-  if (!summary) return <div className="page heat-theme"><HeatDataState loading={data.loading} error={data.error} /></div>;
+  if (!summary) return <div className="page heat-theme"><ModuleTabs module="heat" route="heat-register" onNavigate={onNavigate} /><HeatDataState loading={data.loading} error={data.error} /></div>;
   const causes = Object.keys(HEAT_CAUSE).filter(k => hotspots.some(h => h.cause === k));
   const rows = hotspots.filter(h => filter === 'all' || h.cause === filter);
   const c = summary.composite;
   return <div className="page heat-theme">
+    <ModuleTabs module="heat" route="heat-register" onNavigate={onNavigate} />
     <header className="page-head">
       <span className="eyebrow">{summary.city} · summers {summary.scenes[0]?.date.slice(0, 4)}–{summary.scenes.at(-1)?.date.slice(0, 4)}</span>
       <h1>Heat risk register</h1>
@@ -288,9 +286,9 @@ function HeatRegisterPage({ data }) {
 }
 
 /* ───────────── data & model ───────────── */
-function HeatSourcesPage({ data }) {
+function HeatSourcesPage({ data, onNavigate }) {
   const { summary } = data;
-  if (!summary) return <div className="page heat-theme"><HeatDataState loading={data.loading} error={data.error} /></div>;
+  if (!summary) return <div className="page heat-theme"><ModuleTabs module="heat" route="heat-sources" onNavigate={onNavigate} /><HeatDataState loading={data.loading} error={data.error} /></div>;
   const c = summary.composite, L = summary.lidar, reg = summary.regression;
   const first = summary.scenes[0]?.date, last = summary.scenes.at(-1)?.date;
   const sources = [
@@ -319,6 +317,7 @@ function HeatSourcesPage({ data }) {
     ['05', 'Problem → action', 'Cause from the data (bare ground, large roofs, dark surfaces, missing trees); actions with cooling estimates; named from OpenStreetMap.'],
   ];
   return <div className="page heat-theme">
+    <ModuleTabs module="heat" route="heat-sources" onNavigate={onNavigate} />
     <header className="page-head">
       <span className="eyebrow">From orbit to street</span>
       <h1>Heat data &amp; model</h1>
@@ -362,7 +361,7 @@ function HeatSourcesPage({ data }) {
 
 export default function HeatNerve({ page, onNavigate }) {
   const data = useHeatData();
-  if (page === 'heat-register') return <HeatRegisterPage data={data} />;
-  if (page === 'heat-sources') return <HeatSourcesPage data={data} />;
+  if (page === 'heat-register') return <HeatRegisterPage data={data} onNavigate={onNavigate} />;
+  if (page === 'heat-sources') return <HeatSourcesPage data={data} onNavigate={onNavigate} />;
   return <HeatMapPage data={data} onNavigate={onNavigate} />;
 }

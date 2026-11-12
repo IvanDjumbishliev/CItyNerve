@@ -7,6 +7,8 @@ import {
   ShieldCheck, Siren, ThermometerSun, TrafficCone, Waves, Wifi, X,
 } from 'lucide-react';
 import { CITIES, MODULES, INITIAL_INCIDENTS, SCENARIOS } from './legacyData.js';
+import { HAZARD_MODULES } from '../data.js';
+import ModuleTabs from '../ModuleTabs.jsx';
 
 const ICONS = { overview: LayoutDashboard, flood: Waves, fog: CloudFog, heat: ThermometerSun, mobility: CarFront, alert: BellRing, incidents: Siren, devices: Radio, settings: Settings2 };
 const MODULE_KEYS = ['flood', 'fog', 'heat', 'mobility', 'alert'];
@@ -19,10 +21,32 @@ function Brand({ compact = false }) {
 function Tag({ children, variant = 'neutral' }) { return <span className={`tag tag-${variant}`}>{children}</span>; }
 function StatusDot({ color = 'green' }) { return <span className={`status-dot dot-${color}`} />; }
 function ModuleIcon({ module, size = 19 }) {const Icon = ICONS[module] ?? Activity;return <span className={`module-icon mod-${module}`}><Icon size={size}/></span>}
-function Header({ city, setCityId, page, onMenu, incidents }) {
-  const [searchOpen,setSearchOpen]=useState(false);
-  return <header className="topbar"><div className="top-left"><button className="mobile-menu icon-button" onClick={onMenu} aria-label="Open menu"><Menu size={21}/></button><div className="breadcrumbs"><span>City Operations</span><ChevronRight size={15}/><strong>{page==='overview'?'Overview':page==='incidents'?'Incident center':page==='devices'?'Connected devices':page==='settings'?'Settings':typeName(page)}</strong></div></div><div className="top-actions"><div className="search-wrap"><button className="search-button" onClick={()=>setSearchOpen(v=>!v)}><Search size={17}/><span>Search platform</span><kbd>⌘ K</kbd></button>{searchOpen&&<div className="search-pop"><p>Quick navigation</p>{[['overview','Overview'],...MODULE_KEYS.map(x=>[x,typeName(x)])].map(([id,name])=><button key={id} onClick={()=>{document.dispatchEvent(new CustomEvent('cn:navigate',{detail:id}));setSearchOpen(false)}}>{name}<ArrowRight size={14}/></button>)}</div>}</div>
-    <div className="city-select"><MapPin size={15}/><select aria-label="Select city" value={city.id} onChange={e=>setCityId(e.target.value)}>{CITIES.map(x=><option key={x.id} value={x.id}>{x.label}, {x.country==='Slovakia'?'SK':x.country==='Spain'?'ES':'NL'}</option>)}</select><ChevronDown size={14}/></div><button className="notification-button icon-button" title={`${incidents.length} demo incidents`} onClick={()=>document.dispatchEvent(new CustomEvent('cn:navigate',{detail:'incidents'}))}><Bell size={19}/><i/></button><div className="avatar" title="Demo operator">CN</div></div></header>;
+function Header({ city, setCityId, page, onMenu, incidents, onNavigateRoute }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const hazard = HAZARD_MODULES.find((module) => module.id === page);
+  return (
+    <header className={`topbar ${hazard ? 'has-module-tabs' : ''}`}>
+      <div className="top-left">
+        <button className="mobile-menu icon-button" onClick={onMenu} aria-label="Open menu"><Menu size={21} /></button>
+        <div className="breadcrumbs">
+          <span>City Operations</span><ChevronRight size={15} />
+          <strong>{page === 'overview' ? 'Overview' : page === 'incidents' ? 'Incident center' : page === 'devices' ? 'Connected devices' : page === 'settings' ? 'Settings' : typeName(page)}</strong>
+        </div>
+      </div>
+      {hazard && <ModuleTabs module={hazard} route={hazard.routes.live} onNavigate={onNavigateRoute} />}
+      <div className="top-actions">
+        <div className="search-wrap">
+          <button className="search-button" onClick={() => setSearchOpen(value => !value)}><Search size={17} /><span>Search platform</span><kbd>⌘ K</kbd></button>
+          {searchOpen && <div className="search-pop"><p>Quick navigation</p>{[['overview', 'Overview'], ...MODULE_KEYS.map(id => [id, typeName(id)])].map(([id, name]) =>
+            <button key={id} onClick={() => { document.dispatchEvent(new CustomEvent('cn:navigate', { detail: id })); setSearchOpen(false); }}>{name}<ArrowRight size={14} /></button>
+          )}</div>}
+        </div>
+        <div className="city-select"><MapPin size={15} /><select aria-label="Select city" value={city.id} onChange={event => setCityId(event.target.value)}>{CITIES.map(item => <option key={item.id} value={item.id}>{item.label}, {item.country === 'Slovakia' ? 'SK' : item.country === 'Spain' ? 'ES' : 'NL'}</option>)}</select><ChevronDown size={14} /></div>
+        <button className="notification-button icon-button" title={`${incidents.length} demo incidents`} onClick={() => document.dispatchEvent(new CustomEvent('cn:navigate', { detail: 'incidents' }))}><Bell size={19} /><i /></button>
+        <div className="avatar" title="Demo operator">CN</div>
+      </div>
+    </header>
+  );
 }
 function StatCard({ label, value, trend, foot, icon:Icon, tone='blue' }) { return <div className="stat-card"><div className="stat-top"><span>{label}</span><span className={`stat-icon stat-${tone}`}><Icon size={19}/></span></div><div className="stat-value">{value}</div><div className="stat-foot"><span className="stat-mini">{trend}</span> {foot}</div></div> }
 function CityMap({ city, incidents, onIncident }) {
@@ -68,7 +92,7 @@ function IncidentsPage({ incidents, clearDemo }) {const [filter,setFilter]=useSt
 function DevicesPage(){return <><div className="page-heading"><div><div className="eyebrow">SYSTEM / DEVICE NETWORK</div><h1>Connected devices</h1><p>Device management UI prepared for ESP32 and other IoT integrations.</p></div></div><section className="panel full-panel"><div className="panel-header"><div><h2>Device registry</h2><p>Illustrative hardware configuration — no real devices connected</p></div><Tag variant="amber">Simulation</Tag></div><div className="device-table"><div className="device-header"><span>DEVICE</span><span>MODULE</span><span>CONNECTION</span><span>STATE</span></div>{[['CN-WTR-01','Water-level sensor','FloodNerve'],['CN-GATE-01','Flood barrier servo','FloodNerve'],['CN-VIS-01','Visibility sensor','FogNerve'],['CN-SIGN-01','Road warning sign','FogNerve'],['CN-PARK-01','Parking occupancy','MobilityNerve']].map(([id,name,mod])=><div className="device-entry" key={id}><span><Radio size={17}/><strong>{id}</strong><small>{name}</small></span><span>{mod}</span><span>Not paired</span><span><Tag>Placeholder</Tag></span></div>)}</div></section></>}
 function SettingsPage({ city, cityId, setCityId }){return <><div className="page-heading"><div><div className="eyebrow">SYSTEM / SETTINGS</div><h1>Workspace settings</h1><p>Configuration for your CityNerve demonstration environment.</p></div></div><section className="panel settings-panel"><h2>City configuration</h2><p>Select which European city your demo is currently representing.</p><label htmlFor="settings-city">Active city</label><select id="settings-city" value={cityId} onChange={e=>setCityId(e.target.value)}>{CITIES.map(c=><option key={c.id} value={c.id}>{c.label}, {c.country}</option>)}</select><div className="settings-line"><span>Region</span><strong>{city.region}</strong></div><div className="settings-line"><span>Data mode</span><Tag variant="amber">Simulated / sample</Tag></div><div className="settings-line"><span>Connected APIs</span><strong>None yet</strong></div><div className="settings-line"><span>Environment</span><strong>Hackathon development</strong></div></section></>}
 function Toast({ message, dismiss }){return message?<div className="toast"><span className="toast-symbol"><Check size={18}/></span><div><strong>Scenario activated</strong><small>{message}</small></div><button onClick={dismiss} aria-label="Dismiss notification"><X size={17}/></button></div>:null}
-export default function LegacyApp({ page, setPage }){
+export default function LegacyApp({ page, setPage, onNavigateRoute }){
   const [cityId,setCityId]=useState('michalovce');
   const [incidents,setIncidents]=useState(INITIAL_INCIDENTS);
   const [mobileOpen,setMobileOpen]=useState(false);
@@ -77,5 +101,5 @@ export default function LegacyApp({ page, setPage }){
   React.useEffect(()=>{const fn=e=>setPage(e.detail);document.addEventListener('cn:navigate',fn);return()=>document.removeEventListener('cn:navigate',fn)},[]);
   function triggerScenario(key){const s=SCENARIOS[key];if(!s)return;const entry={id:`CN-${Date.now().toString().slice(-7)}`,type:key==='parking'?'mobility':key,title:s.title,location:s.location,severity:s.severity,status:'New',time:nowTime(),source:'Simulated scenario'};setIncidents(old=>[entry,...old]);setToast(`${s.title} — ${s.effects.join(' · ')}`);}
   const clearDemo=()=>{setIncidents(INITIAL_INCIDENTS);setToast('Incident list reset to initial sample data.')};
-  return <div className="legacy"><div className="app-shell"><div className="main-area"><Header city={city} setCityId={setCityId} page={page} onMenu={()=>setMobileOpen(true)} incidents={incidents}/><main className="content"><div className="content-inner">{page==='overview'?<Overview city={city} incidents={incidents} setPage={setPage} triggerScenario={triggerScenario}/>:MODULE_KEYS.includes(page)?<ModulePage type={page} city={city} incidents={incidents} setPage={setPage} triggerScenario={triggerScenario}/>:page==='incidents'?<IncidentsPage incidents={incidents} clearDemo={clearDemo}/>:page==='devices'?<DevicesPage/>:<SettingsPage city={city} cityId={cityId} setCityId={setCityId}/>}<footer className="app-footer"><span>© 2026 CityNerve · Hackathon starter</span><span>European cities, connected. <span className="footer-sep">·</span> <strong>DEMO DATA</strong></span></footer></div></main></div><Toast message={toast} dismiss={()=>setToast('')}/></div></div>;
+  return <div className="legacy"><div className="app-shell"><div className="main-area"><Header city={city} setCityId={setCityId} page={page} onMenu={()=>setMobileOpen(true)} incidents={incidents} onNavigateRoute={onNavigateRoute}/><main className="content"><div className="content-inner">{page==='overview'?<Overview city={city} incidents={incidents} setPage={setPage} triggerScenario={triggerScenario}/>:MODULE_KEYS.includes(page)?<ModulePage type={page} city={city} incidents={incidents} setPage={setPage} triggerScenario={triggerScenario}/>:page==='incidents'?<IncidentsPage incidents={incidents} clearDemo={clearDemo}/>:page==='devices'?<DevicesPage/>:<SettingsPage city={city} cityId={cityId} setCityId={setCityId}/>}<footer className="app-footer"><span>© 2026 CityNerve · Hackathon starter</span><span>European cities, connected. <span className="footer-sep">·</span> <strong>DEMO DATA</strong></span></footer></div></main></div><Toast message={toast} dismiss={()=>setToast('')}/></div></div>;
 }

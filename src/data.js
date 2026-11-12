@@ -9,6 +9,48 @@ export const REGIONS = {
 };
 export const CITY = REGIONS.sofia;
 
+export const HAZARD_MODULES = [
+  {
+    id: 'flood',
+    name: 'FloodNerve',
+    navLabel: 'Flood',
+    icon: 'flood',
+    routes: {
+      map: 'map',
+      register: 'register',
+      sources: 'sources',
+      live: 'l-flood',
+    },
+  },
+  {
+    id: 'fog',
+    name: 'FogNerve',
+    navLabel: 'Fog',
+    icon: 'fog',
+    routes: {
+      map: 'fog-map',
+      register: 'fog-register',
+      sources: 'fog-sources',
+      live: 'l-fog',
+    },
+  },
+  {
+    id: 'heat',
+    name: 'HeatNerve',
+    navLabel: 'Heat',
+    icon: 'heat',
+    routes: {
+      map: 'heat-map',
+      register: 'heat-register',
+      sources: 'heat-sources',
+      live: 'l-heat',
+    },
+  },
+];
+
+export const getHazardModuleForRoute = (route) =>
+  HAZARD_MODULES.find((module) => Object.values(module.routes).includes(route));
+
 export const RISK = {
   critical: { label: 'Critical', color: '#F2594B' },
   high:     { label: 'High',     color: '#F39237' },

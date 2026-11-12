@@ -5,6 +5,7 @@ import SatelliteHeat from "./heat/SatelliteHeat.jsx";
 import { buildingShadows, sunPosition, inShade, inRing } from "./heat/shadows.js";
 
 import { HEAT_TOWNS, boundary, coverageOf, loadNeighborhood } from "./heat/towns.js";
+import ModuleTabs from "./ModuleTabs.jsx";
 import { Play, Pause, MapPin, Maximize2, Building2, Loader2, ChevronDown, X } from "lucide-react";
 const empty = { type: "FeatureCollection", features: [] };
 const timeLabel = (hour) =>
@@ -14,12 +15,12 @@ const timeLabel = (hour) =>
     .toString()
     .padStart(2, "0");
 
-export default function HeatPage() {
+export default function HeatPage({ onNavigate }) {
   const [townId, setTownId] = useState("sofia");
   const town = HEAT_TOWNS.find((t) => t.id === townId);
-  return <TownHeat key={townId} town={town} townId={townId} setTownId={setTownId} />;
+  return <TownHeat key={townId} town={town} townId={townId} setTownId={setTownId} onNavigate={onNavigate} />;
 }
-function TownHeat({ town, townId, setTownId }) {
+function TownHeat({ town, townId, setTownId, onNavigate }) {
   const [bounds, setBounds] = useState(null),
     [loading, setLoading] = useState(false),
     [outside, setOutside] = useState(false);
@@ -247,6 +248,7 @@ function TownHeat({ town, townId, setTownId }) {
           <ChevronDown size={14} aria-hidden="true" />
         </label>
       </header>
+      <ModuleTabs module="heat" route="l-heat" onNavigate={onNavigate} />
       <aside className="sun-inspector glass">
         {point ? (
           <>

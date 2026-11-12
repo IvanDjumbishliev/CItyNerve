@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import FogMap from './FogMap.jsx';
 import { useFogData } from './useFogData.js';
+import ModuleTabs from './ModuleTabs.jsx';
 
 const TZ = 'Europe/Sofia';
 const VISIBILITY_CLASSES = [
@@ -135,11 +136,7 @@ function FogTopBar({ hotspots, onSelect, onDock, onLens, onNavigate }) {
         {!matches.length && <p className="muted">No results</p>}
       </div>}
     </div>
-    <nav className="fog-page-nav" aria-label="FogNerve pages">
-      <button onClick={() => onNavigate('fog-map')}>Map</button>
-      <button onClick={() => onNavigate('fog-register')}>Risk register</button>
-      <button onClick={() => onNavigate('fog-sources')}>Data &amp; model</button>
-    </nav>
+    <ModuleTabs module="fog" route="fog-map" onNavigate={onNavigate} />
     <div className="top-actions">
       <button className="ghost-btn glass mobile-only" onClick={onDock} aria-label="Episodes and layers"><SlidersHorizontal size={15} /></button>
       <button className="ghost-btn glass mobile-only" onClick={onLens} aria-label="Details"><PanelRightOpen size={15} /></button>
@@ -246,11 +243,12 @@ function FogMapPage({ data, onNavigate }) {
   </div>;
 }
 
-function FogRegisterPage({ data }) {
+function FogRegisterPage({ data, onNavigate }) {
   const { summary, hotspots, riskRegister } = data;
-  if (!summary) return <div className="page fog-theme"><FogDataState loading={data.loading} error={data.error} /></div>;
+  if (!summary) return <div className="page fog-theme"><ModuleTabs module="fog" route="fog-register" onNavigate={onNavigate} /><FogDataState loading={data.loading} error={data.error} /></div>;
   const rows = [...hotspots, ...riskRegister.filter(row => !hotspots.some(hotspot => hotspot.id === row.id))];
   return <div className="page fog-theme">
+    <ModuleTabs module="fog" route="fog-register" onNavigate={onNavigate} />
     <header className="page-head">
       <span className="eyebrow">Sofia · {summary.period.start} – {summary.period.end}</span>
       <h1>Fog risk register</h1>
@@ -285,9 +283,9 @@ function FogRegisterPage({ data }) {
   </div>;
 }
 
-function FogSourcesPage({ data }) {
+function FogSourcesPage({ data, onNavigate }) {
   const { summary } = data;
-  if (!summary) return <div className="page fog-theme"><FogDataState loading={data.loading} error={data.error} /></div>;
+  if (!summary) return <div className="page fog-theme"><ModuleTabs module="fog" route="fog-sources" onNavigate={onNavigate} /><FogDataState loading={data.loading} error={data.error} /></div>;
   const inputs = [
     { kind: 'Observed visibility', name: 'Iowa Environmental Mesonet ASOS archive', agency: 'IEM · station LBSF', live: true,
       role: `${summary.station.observations.toLocaleString('en')} hourly records; visibility in metres derived from METAR statute miles. Fog catalogue labels include visibility <1 km or FG/BR/FZFG weather codes.`,
@@ -319,6 +317,7 @@ function FogSourcesPage({ data }) {
   ];
   const metrics = summary.calibration;
   return <div className="page fog-theme">
+    <ModuleTabs module="fog" route="fog-sources" onNavigate={onNavigate} />
     <header className="page-head">
       <span className="eyebrow">Ground observations to city screening</span>
       <h1>Fog data &amp; model</h1>
@@ -363,7 +362,7 @@ function FogSourcesPage({ data }) {
 
 export default function FogNerve({ page, onNavigate }) {
   const data = useFogData();
-  if (page === 'fog-register') return <FogRegisterPage data={data} />;
-  if (page === 'fog-sources') return <FogSourcesPage data={data} />;
+  if (page === 'fog-register') return <FogRegisterPage data={data} onNavigate={onNavigate} />;
+  if (page === 'fog-sources') return <FogSourcesPage data={data} onNavigate={onNavigate} />;
   return <FogMapPage data={data} onNavigate={onNavigate} />;
 }

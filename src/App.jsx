@@ -1,9 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Waves,
-  Map as MapIcon,
-  ListOrdered,
-  Satellite,
   Search,
   X,
   Play,
@@ -40,6 +37,8 @@ import {
   BellRing,
   Radio,
   Settings2,
+  PanelLeftClose,
+  PanelLeftOpen,
   Zap,
   Square,
   Timer,
@@ -50,7 +49,7 @@ import MobilityPage from "./MobilityPage.jsx";
 import AlertsPage from "./AlertsPage.jsx";
 import HeatPage from "./HeatPage.jsx";
 import FloodMap from "./FloodMap.jsx";
-import { CITY, REGIONS, RISK, CAUSE, riskLevel, PIPELINE } from "./data.js";
+import { CITY, REGIONS, RISK, CAUSE, HAZARD_MODULES, getHazardModuleForRoute, riskLevel, PIPELINE } from "./data.js";
 import { useFloodData } from "./useFloodData.js";
 import {
   loadDam,
@@ -66,6 +65,7 @@ import {
 import FogNerve from "./FogNerve.jsx";
 import HeatNerve from "./HeatNerve.jsx";
 import LegacyApp from "./legacy/LegacyApp.jsx";
+import ModuleTabs from "./ModuleTabs.jsx";
 import "./legacy/legacy.css";
 
 const TZ = "Europe/Sofia";
@@ -133,62 +133,55 @@ function Toggle({ on, onChange, icon: Icon, label, hint }) {
 }
 
 /* ───────────── navigation rail ───────────── */
+const HAZARD_ICONS = { flood: RainIcon, fog: CloudFog, heat: ThermometerSun };
 const RAIL_GROUPS = [
   {
-    label: "FloodNerve",
-    items: [
-      ["map", "Flood map", MapIcon],
-      ["register", "Risk register", ListOrdered],
-      ["sources", "Data & model", Satellite],
-    ],
-  },
-  {
-    label: "FogNerve",
-    items: [
-      ["fog-map", "Fog map", CloudFog],
-      ["fog-register", "Fog risk", ListOrdered],
-      ["fog-sources", "Fog data", Satellite],
-    ],
-  },
-  {
-    label: "HeatNerve",
-    items: [
-      ["heat-map", "Heat map", ThermometerSun],
-      ["heat-register", "Heat risk", ListOrdered],
-      ["heat-sources", "Heat data", Satellite],
-    ],
-  },
-  {
-    label: "Platform",
     items: [
       ["l-overview", "Overview", LayoutDashboard],
       ["l-incidents", "Incidents", Siren],
-      ["l-flood", "Flood", RainIcon],
-      ["l-heat", "Heat", ThermometerSun],
-      ["l-mobility", "Mobility", CarFront],
       ["l-alert", "Alerts", BellRing],
+    ],
+  },
+  { items: HAZARD_MODULES.map((module) => [module.routes.map, module.navLabel, HAZARD_ICONS[module.icon]]) },
+  {
+    items: [
+      ["l-mobility", "Mobility", CarFront],
       ["l-devices", "Devices", Radio],
-      ["l-settings", "Settings", Settings2],
     ],
   },
 ];
 
-function Rail({ page, setPage }) {
+function Rail({ page, setPage, expanded, setExpanded }) {
+  const activeModule = getHazardModuleForRoute(page);
+  const activeId = activeModule?.routes.map ?? page;
   return (
-    <nav className="rail" aria-label="Main">
-      <div className="rail-logo" title="FloodNerve">
-        <Waves size={20} strokeWidth={2.4} />
+    <nav className={`rail ${expanded ? "is-expanded" : ""}`} aria-label="Main navigation">
+      <div className="rail-head">
+        <div className="rail-logo" title="FloodNerve">
+          <Waves size={20} strokeWidth={2.4} />
+        </div>
+        <button
+          type="button"
+          className="rail-expand"
+          onClick={() => setExpanded((value) => !value)}
+          aria-label={expanded ? "Collapse navigation" : "Expand navigation"}
+          aria-expanded={expanded}
+          title={expanded ? "Collapse navigation" : "Expand navigation"}
+        >
+          {expanded ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+        </button>
       </div>
       <div className="rail-items">
-        {RAIL_GROUPS.map((g, gi) => (
-          <div className="rail-group" key={gi}>
-            {g.label && <span className="rail-group-label">{g.label}</span>}
-            {g.items.map(([id, label, Icon]) => (
+        {RAIL_GROUPS.map((group, groupIndex) => (
+          <div className="rail-group" key={groupIndex}>
+            {group.items.map(([id, label, Icon]) => (
               <button
                 key={id}
-                className={`rail-btn ${page === id ? "is-active" : ""}`}
+                type="button"
+                className={`rail-btn ${activeId === id ? "is-active" : ""}`}
                 onClick={() => setPage(id)}
-                aria-current={page === id}
+                aria-current={activeId === id ? "page" : undefined}
+                aria-label={label}
                 title={label}
               >
                 <Icon size={19} />
@@ -198,10 +191,17 @@ function Rail({ page, setPage }) {
           </div>
         ))}
       </div>
-      <div className="rail-foot">
-        <span className="pulse-dot live" />
-        <span className="rail-foot-text">NASA data</span>
-      </div>
+      <button
+        type="button"
+        className={`rail-btn rail-settings ${page === "l-settings" ? "is-active" : ""}`}
+        onClick={() => setPage("l-settings")}
+        aria-current={page === "l-settings" ? "page" : undefined}
+        aria-label="Settings"
+        title="Settings"
+      >
+        <Settings2 size={19} />
+        <span>Settings</span>
+      </button>
     </nav>
   );
 }
@@ -802,6 +802,7 @@ function MapTopBar({
   damReady,
   region,
   setRegion,
+  onNavigate,
 }) {
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(false);
@@ -833,6 +834,7 @@ function MapTopBar({
           </button>
         ))}
       </div>
+      <ModuleTabs module="flood" route="map" onNavigate={onNavigate} />
       <div className={`search glass ${focus ? "is-focus" : ""}`}>
         <Search size={15} />
         <input
@@ -945,7 +947,7 @@ function DataState({ loading, error }) {
 }
 
 /* ───────────── pages ───────────── */
-function MapPage({ data, region, setRegion }) {
+function MapPage({ data, region, setRegion, onNavigate }) {
   const view = REGIONS[region];
   const { summary, hotspots } = data;
   const [eventIdx, setEventIdx] = useState(-1);
@@ -1116,6 +1118,7 @@ function MapPage({ data, region, setRegion }) {
         }}
         region={region}
         setRegion={setRegion}
+        onNavigate={onNavigate}
       />
       {summary ? (
         <>
@@ -1169,12 +1172,13 @@ function MapPage({ data, region, setRegion }) {
   );
 }
 
-function RegisterPage({ data }) {
+function RegisterPage({ data, onNavigate }) {
   const { summary, hotspots } = data;
   const [filter, setFilter] = useState("all");
   if (!summary)
     return (
       <div className="page">
+        <ModuleTabs module="flood" route="register" onNavigate={onNavigate} />
         <DataState loading={data.loading} error={data.error} />
       </div>
     );
@@ -1184,6 +1188,7 @@ function RegisterPage({ data }) {
   );
   return (
     <div className="page">
+      <ModuleTabs module="flood" route="register" onNavigate={onNavigate} />
       <header className="page-head">
         <span className="eyebrow">
           {REGIONS[data.region].label} · {fmtDay(summary.period.start)} –{" "}
@@ -1265,11 +1270,12 @@ function RegisterPage({ data }) {
   );
 }
 
-function SourcesPage({ data }) {
+function SourcesPage({ data, onNavigate }) {
   const { summary } = data;
   if (!summary)
     return (
       <div className="page">
+        <ModuleTabs module="flood" route="sources" onNavigate={onNavigate} />
         <DataState loading={data.loading} error={data.error} />
       </div>
     );
@@ -1370,6 +1376,7 @@ function SourcesPage({ data }) {
   const statusLabel = { live: "Connected", login: "Needs login" };
   return (
     <div className="page">
+      <ModuleTabs module="flood" route="sources" onNavigate={onNavigate} />
       <header className="page-head">
         <span className="eyebrow">From orbit to street</span>
         <h1>Data & model</h1>
@@ -1454,15 +1461,16 @@ function SourcesPage({ data }) {
 export default function App() {
   const [page, setPage] = useState(() => window.location.hash.slice(1) || "map"); // e.g. #heat-map
   const [region, setRegion] = useState("sofia");
+  const [railExpanded, setRailExpanded] = useState(false);
   const data = useFloodData(region);
   return (
-    <div className="shell">
-      <Rail page={page} setPage={setPage} />
+    <div className={`shell ${railExpanded ? "rail-expanded" : ""}`}>
+      <Rail page={page} setPage={setPage} expanded={railExpanded} setExpanded={setRailExpanded} />
       <main className={`main main-${page}`}>
-        {page === "map" && <MapPage data={data} region={region} setRegion={setRegion} />}
-        {page === "register" && <RegisterPage data={data} />}
-        {page === "sources" && <SourcesPage data={data} />}
-        {page === "l-heat" && <HeatPage />}
+        {page === "map" && <MapPage data={data} region={region} setRegion={setRegion} onNavigate={setPage} />}
+        {page === "register" && <RegisterPage data={data} onNavigate={setPage} />}
+        {page === "sources" && <SourcesPage data={data} onNavigate={setPage} />}
+        {page === "l-heat" && <HeatPage onNavigate={setPage} />}
         {page === "l-mobility" && <MobilityPage />}
         {page === "l-alert" && <AlertsPage />}
         {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
@@ -1474,6 +1482,7 @@ export default function App() {
             <LegacyApp
               page={page.slice(2)}
               setPage={(id) => setPage(id === "fog" ? "fog-map" : "l-" + id)}
+              onNavigateRoute={setPage}
             />
           )}
       </main>
