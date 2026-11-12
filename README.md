@@ -192,3 +192,9 @@ Keep provider failures visible, preserve source timestamps, and label modeled or
 **CityNerve - turn city data into places people can understand.**
 
 </div>
+
+### Parking inventory and board demonstrations
+
+**Live parking** uses operator availability feeds for supported cities. **Parking inventory** loads OpenStreetMap locations within 3.5 km of the selected city; its optional occupancy and closure controls are explicitly simulated and drive the smart-board previews. OSM does not supply live occupancy.
+
+The inventory uses `/api/osm-parking` through the same Node middleware in `npm run dev`, `npm run preview`, and `npm start` (after `npm run build`). Restart Vite after changing server code. Static-only hosting needs this API service as well. Server requests identify CityNerve, allow up to 25 seconds per Overpass provider, and fail over across three public providers. Successful location inventories are cached for 24 hours in `.cache/osm-parking`; provider failures can reuse inventories up to seven days old, explicitly marked as older cached locations. Cached timestamps are preserved. A first request can take up to 75 seconds when providers are busy; an outage with no cache shows an error rather than invented locations.

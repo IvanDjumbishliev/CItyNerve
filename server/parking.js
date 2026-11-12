@@ -1,3 +1,4 @@
+import { osmParkingMiddleware } from './osmParking.js';
 import {
   providerUrls,
   attribution,
@@ -52,7 +53,7 @@ export async function availability(city) {
 }
 export function parkingMiddleware(req, res, next) {
   const match = req.url?.match(/^\/api\/parking\/([a-z]+)$/);
-  if (!match) return next();
+  if (!match) return osmParkingMiddleware(req, res, next);
   if (!Object.hasOwn(providerUrls, match[1])) {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Unsupported parking city" }));

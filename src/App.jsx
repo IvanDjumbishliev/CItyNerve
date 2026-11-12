@@ -149,7 +149,7 @@ const RAIL_GROUPS = [
     items: [
       ["operations", "City operations", LayoutDashboard],
       ["l-incidents", "Incidents", Siren],
-      ["ops-parking", "Parking simulator", CarFront],
+      ["ops-parking", "Parking inventory", CarFront],
       ["l-alert", "Smart boards", BellRing],
       ...HAZARD_MODULES.map((module) => [
         module.routes.map,
