@@ -6,6 +6,8 @@ import { buildingShadows, sunPosition, inShade, inRing } from "./heat/shadows.js
 
 import { HEAT_TOWNS, boundary, coverageOf, loadNeighborhood } from "./heat/towns.js";
 import ModuleTabs from "./ModuleTabs.jsx";
+import { usePlaceMap } from "./inspect/PlaceContext.jsx";
+import { readSelection, readInspectionTime } from "./inspect/geometry.js";
 import { Play, Pause, MapPin, Maximize2, Building2, Loader2, ChevronDown, X } from "lucide-react";
 const empty = { type: "FeatureCollection", features: [] };
 const timeLabel = (hour) =>
@@ -16,9 +18,20 @@ const timeLabel = (hour) =>
     .padStart(2, "0");
 
 export default function HeatPage({ onNavigate }) {
-  const [townId, setTownId] = useState("sofia");
+  const [townId, setTownId] = useState(() => {
+    const city = readSelection(window.location.hash)?.cityId;
+    return HEAT_TOWNS.some((town) => town.id === city) ? city : "sofia";
+  });
   const town = HEAT_TOWNS.find((t) => t.id === townId);
-  return <TownHeat key={townId} town={town} townId={townId} setTownId={setTownId} onNavigate={onNavigate} />;
+  return (
+    <TownHeat
+      key={townId}
+      town={town}
+      townId={townId}
+      setTownId={setTownId}
+      onNavigate={onNavigate}
+    />
+  );
 }
 function TownHeat({ town, townId, setTownId, onNavigate }) {
   const [bounds, setBounds] = useState(null),
@@ -59,8 +72,8 @@ function TownHeat({ town, townId, setTownId, onNavigate }) {
   const [buildings, setBuildings] = useState(null),
     [ready, setReady] = useState(false),
     [error, setError] = useState("");
-  const [day, setDay] = useState("2026-07-15"),
-    [hour, setHour] = useState(15),
+  const [day, setDay] = useState(() => readInspectionTime(window.location.hash).day),
+    [hour, setHour] = useState(() => readInspectionTime(window.location.hash).hour),
     [point, setPoint] = useState(null);
   const [playing, setPlaying] = useState(false),
     [satellite, setSatellite] = useState(false);
@@ -76,6 +89,26 @@ function TownHeat({ town, townId, setTownId, onNavigate }) {
     [buildings, day, hour, solarTown],
   );
   const sun = sunPosition(day, hour, solarTown);
+  usePlaceMap(ready ? map.current : null, {
+    cityId: townId,
+    route: "l-heat",
+    shade: {
+      buildings,
+      bounds,
+      shadows,
+      solarTown,
+      day,
+      hour,
+      onDay: (value) => {
+        setPlaying(false);
+        setDay(value);
+      },
+      onHour: (value) => {
+        setPlaying(false);
+        setHour(value);
+      },
+    },
+  });
   const samples = useMemo(() => {
     if (!buildings || !point) return [];
     return Array.from({ length: 28 }, (_, i) => {

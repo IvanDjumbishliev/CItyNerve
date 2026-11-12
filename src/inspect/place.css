@@ -1,0 +1,233 @@
+.place-tool {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 17px;
+  border: 1px solid #637c8e;
+  border-radius: 12px;
+  background: #12222ded;
+  color: #e4f4ff;
+  box-shadow: 0 5px 24px #0004;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.place-tool.is-on {
+  background: #114e64;
+  border-color: #78d9ff;
+}
+.place-instruction {
+  position: absolute;
+  top: 126px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  width: min(360px, 75%);
+  padding: 12px;
+  background: #12222df2;
+  border-radius: 10px;
+  color: #c9e6f3;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+}
+.place-panel {
+  position: absolute;
+  top: 126px;
+  right: 14px;
+  bottom: 20px;
+  z-index: 46;
+  width: min(365px, calc(100% - 28px));
+  overflow-y: auto;
+  padding: 19px;
+  border: 1px solid #415564;
+  border-radius: 16px;
+  background: #0f1c26f7;
+  box-shadow: 0 15px 45px #0006;
+  color: #e0eff9;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.place-header {
+  position: sticky;
+  top: -19px;
+  z-index: 2;
+  padding: 12px 0;
+  background: #0f1c26;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.place-header h2 {
+  font-size: 21px;
+  line-height: 1.3;
+  margin: 7px 0;
+  overflow-wrap: anywhere;
+}
+.place-header p,
+.place-intro {
+  color: #a6bece;
+  font-size: 11px;
+}
+.place-eyebrow {
+  color: #7fdbf9;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+.place-icon {
+  border: 0;
+  background: transparent;
+  color: #d1e9f7;
+  cursor: pointer;
+  padding: 5px;
+}
+.place-time {
+  border: 1px solid #3a4c5b;
+  border-radius: 10px;
+  padding: 10px 13px;
+  margin: 17px 0;
+}
+.place-time legend {
+  padding: 0 5px;
+  font-weight: 600;
+}
+.place-time label {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 7px 0;
+}
+.place-time input[type="range"] {
+  width: 100%;
+  accent-color: #7fdbf9;
+}
+.place-time input[type="date"] {
+  color-scheme: dark;
+  background: #1d3040;
+  border: 1px solid #486171;
+  color: #e0eff9;
+  border-radius: 6px;
+  padding: 5px;
+  font: inherit;
+}
+.place-time small {
+  color: #a6bece;
+  font-size: 10px;
+}
+.place-card {
+  margin-top: 12px;
+  padding: 15px;
+  background: #192a37;
+  border: 1px solid #314959;
+  border-radius: 12px;
+}
+.place-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+.place-card h3 {
+  margin: 0;
+  font-size: 13px;
+}
+.place-card-heading span {
+  color: #a3c4d5;
+  font-size: 8px;
+  letter-spacing: 0.6px;
+}
+.place-value {
+  display: block;
+  color: #9ae4fa;
+  margin-top: 10px;
+  font-size: 17px;
+  line-height: 1.4;
+}
+.place-card.unavailable {
+  background: #17212c;
+}
+.place-card.unavailable .place-value {
+  color: #a6b6c6;
+  font-size: 14px;
+}
+.place-card p {
+  margin: 8px 0 0;
+  color: #b8cbd9;
+  font-size: 11px;
+}
+.place-card .place-date {
+  color: #8ad0e9;
+  font-size: 10px;
+}
+.place-card details {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #b8cbd9;
+}
+.place-card summary {
+  cursor: pointer;
+}
+.place-footer {
+  margin-top: 16px;
+  overflow-wrap: anywhere;
+}
+.place-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 8px 8px 0;
+  padding: 8px;
+  border-radius: 7px;
+  border: 1px solid #486171;
+  color: #e0eff9;
+  background: #203747;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+.place-footer small {
+  font-size: 10px;
+  color: #a6bece;
+}
+.place-pin {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #e0f9ff;
+  background: #159bd1;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 8px #4dd9ff38,
+    0 3px 14px #0008;
+  pointer-events: none;
+}
+.place-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 700px) {
+  .place-tool {
+    top: 112px;
+    left: 16px;
+    transform: none;
+  }
+  .place-instruction {
+    top: 160px;
+  }
+  .place-panel {
+    top: auto;
+    bottom: 65px;
+    right: 8px;
+    width: calc(100% - 16px);
+    max-height: 52vh;
+    padding: 15px;
+  }
+}

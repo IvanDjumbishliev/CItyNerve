@@ -8,7 +8,27 @@ export function PlaceProvider({ children }) {
   const [selection, setSelection] = useState(() => readSelection(window.location.hash));
   const [enabled, setEnabled] = useState(() => Boolean(readSelection(window.location.hash)));
   const [active, setActive] = useState(null);
-  const register = useCallback((map, context) => setActive({ map, context }), []);
+  const datasets = useRef(null);
+  if (!datasets.current) {
+    const shared = readSelection(window.location.hash);
+    const params = new URLSearchParams(window.location.hash.split("?")[1] || "");
+    datasets.current = shared
+      ? {
+          [shared.cityId]: {
+            flood: { eventId: params.get("storm") },
+            heat: { sceneId: params.get("scene") },
+          },
+        }
+      : {};
+  }
+  const register = useCallback((map, context) => {
+    const previous = datasets.current[context.cityId] || {};
+    const remembered = { ...previous };
+    if (context.flood) remembered.flood = context.flood;
+    if (context.heat) remembered.heat = context.heat;
+    datasets.current[context.cityId] = remembered;
+    setActive({ map, context: { ...remembered, ...context } });
+  }, []);
   const unregister = useCallback(
     (map) => setActive((current) => (current?.map === map ? null : current)),
     [],
@@ -47,6 +67,11 @@ export function usePlaceMap(map, context) {
 
 export function PlaceMapInteraction() {
   const { active, enabled, selection, setSelection } = usePlace();
+  useEffect(() => {
+    if (enabled && active?.map && selection?.cityId === active.context.cityId) {
+      active.map.easeTo({ center: selection.point, duration: 500 });
+    }
+  }, [active?.map, active?.context.cityId]);
   useEffect(() => {
     if (!active?.map || !enabled) return;
     const { map, context } = active;

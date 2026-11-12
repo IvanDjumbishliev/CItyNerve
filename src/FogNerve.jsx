@@ -7,6 +7,7 @@ import {
 import FogMap from './FogMap.jsx';
 import { useFogData } from './useFogData.js';
 import ModuleTabs from './ModuleTabs.jsx';
+import { usePlaceMap } from './inspect/PlaceContext.jsx';
 
 const TZ = 'Europe/Sofia';
 const VISIBILITY_CLASSES = [
@@ -214,6 +215,8 @@ function FogMapPage({ data, onNavigate }) {
     if (item) map.flyTo({ center: item.coord, zoom: 15.4, pitch: 62, duration: 1300,
       padding: { right: window.innerWidth > 900 ? 360 : 0 } });
   }, [selectedId, map, hotspots]);
+
+  usePlaceMap(map, { cityId: "sofia", route: "fog-map" });
 
   if (!summary) return <div className="map-page fog-map-page fog-theme">
     <FogMap grid={null} raster={null} fogProbability={0} expectedVisibility={null} hotspots={[]} layers={layers}

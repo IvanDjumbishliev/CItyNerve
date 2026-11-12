@@ -68,6 +68,17 @@ Choose **Sofia, Basel, Ghent, St. Gallen, or Zürich**, search facilities, and c
 
 Parking responses are cached for 60 seconds. Failed refreshes retain the last successful readings with a stale indicator. Provider update times and available fields vary.
 
+### Inspect this place
+
+On the Flood, Fog, satellite Heat, or Heat Live map, enable **Inspect place** and click a street or building. The shared panel shows modeled flood depth, satellite surface heat, building shade, and fog terrain context where their datasets cover that point.
+
+- Switch between maps of the same city to keep the selected location and dataset context.
+- Adjust the date and local time to explore shade. This does not change historical flood or satellite observations.
+- Expand each card for its source, date, resolution, and limitations. Missing coverage stays unavailable.
+- Copy a location link to reopen the point, or press Escape to close inspection.
+
+Sofia has overlapping datasets. Other towns expose only the layers available for them. Building-footprint selections are identified separately from outdoor shade. Inspection runs locally without AI calls.
+
 ## Run locally
 
 Requires **Node.js 20.19+ or 22+**, npm, and internet access for map tiles and external feeds.

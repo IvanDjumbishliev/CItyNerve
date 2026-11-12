@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   Waves,
   Search,
@@ -77,6 +77,9 @@ import FogNerve from "./FogNerve.jsx";
 import HeatNerve from "./HeatNerve.jsx";
 import LegacyApp from "./legacy/LegacyApp.jsx";
 import ModuleTabs from "./ModuleTabs.jsx";
+import { PlaceProvider, usePlaceMap } from "./inspect/PlaceContext.jsx";
+import PlaceInspector from "./inspect/PlaceInspector.jsx";
+import { readSelection } from "./inspect/geometry.js";
 import "./legacy/legacy.css";
 
 const TZ = "Europe/Sofia";
@@ -1072,8 +1075,17 @@ function MapPage({ data, region, setRegion, onNavigate, onDemoIncident }) {
     });
   }, [region]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.split("?")[1] || "");
+    if (summary && params.get("city") === region && params.get("storm")) {
+      setEventIdx(summary.events.findIndex((item) => item.id === params.get("storm")));
+    }
+  }, [summary, region]);
+
   const factor = ev ? (ev.level[hour] ?? 0) : 1;
   const png = summary ? data.base + (ev ? ev.png : summary.max5y.png) : null;
+
+  usePlaceMap(map, { cityId: region, route: "map", flood: { eventId: ev?.id || null } });
 
   const damLevel = dam ? levelOn(ev ? ev.start : null) : null;
   const periodLabel = ev ? `storm of ${fmtDay(ev.start)}` : "highest in 5 years";
@@ -1165,7 +1177,15 @@ function MapPage({ data, region, setRegion, onNavigate, onDemoIncident }) {
             cityLabel={view.label}
           />
           <CameraControls map={map} view={view} />
-          {selection?.kind === "hotspot" && <button className="ghost-btn glass" style={{position:"absolute", bottom:175, left:24, zIndex:10}} onClick={() => onDemoIncident(hotspots.find(h => h.id === selection.id))}>Create demo report at selected hotspot → Operations</button>}
+          {selection?.kind === "hotspot" && (
+            <button
+              className="ghost-btn glass"
+              style={{ position: "absolute", bottom: 175, left: 24, zIndex: 10 }}
+              onClick={() => onDemoIncident(hotspots.find((h) => h.id === selection.id))}
+            >
+              Create demo report at selected hotspot → Operations
+            </button>
+          )}
           {simActive && dam ? (
             <DamHud
               stats={simStats}
@@ -1491,14 +1511,18 @@ export default function App() {
     }
   });
   const [page, setPage] = useState(() => {
-    const initialRoute = window.location.hash.slice(1);
+    const initialRoute = window.location.hash.slice(1).split("?")[0];
     if (["l-overview", "l-devices", "l-flood"].includes(initialRoute)) {
       return "operations";
     }
     if (initialRoute === "l-fog") return "fog-map";
     return initialRoute || "operations";
   }); // e.g. #heat-map
-  const [region, setRegion] = useState("sofia");
+  const [region, setRegion] = useState(() => {
+    const city = readSelection(window.location.hash)?.cityId;
+    return Object.hasOwn(REGIONS, city) ? city : "sofia";
+  });
+  const sharedCityPending = useRef(readSelection(window.location.hash)?.cityId);
   const [railExpanded, setRailExpanded] = useState(false);
   const operations = useOperations();
   const operationalPages = ["operations", "l-incidents", "ops-parking", "l-alert"];
@@ -1510,44 +1534,95 @@ export default function App() {
       console.warn("Could not save the theme preference.", error);
     }
   }, [theme]);
-  useEffect(() => { if (["sofia", "pernik"].includes(operations.city.id)) setRegion(operations.city.id); }, [operations.city.id]);
-  const changeRegion = id => { setRegion(id); const c = REGIONS[id]; operations.selectCity({id, label:c.label, country:c.country, latitude:c.center[1], longitude:c.center[0]}); };
-  const navigateOperations = id => setPage(id === "l-mobility" ? "ops-parking" : id);
+  useEffect(() => {
+    const shared = sharedCityPending.current;
+    if (Object.hasOwn(REGIONS, shared) && shared !== operations.city.id) {
+      const city = REGIONS[shared];
+      operations.selectCity({
+        id: shared,
+        label: city.label,
+        country: city.country,
+        latitude: city.center[1],
+        longitude: city.center[0],
+      });
+      return;
+    }
+    sharedCityPending.current = null;
+    if (["sofia", "pernik"].includes(operations.city.id)) setRegion(operations.city.id);
+  }, [operations.city.id]);
+  const changeRegion = (id) => {
+    setRegion(id);
+    const c = REGIONS[id];
+    operations.selectCity({
+      id,
+      label: c.label,
+      country: c.country,
+      latitude: c.center[1],
+      longitude: c.center[0],
+    });
+  };
+  const navigateOperations = (id) => setPage(id === "l-mobility" ? "ops-parking" : id);
   const data = useFloodData(region);
   return (
-    <div className={`shell ${railExpanded ? "rail-expanded" : ""}`}>
-      <Rail
-        page={page}
-        setPage={setPage}
-        expanded={railExpanded}
-        setExpanded={setRailExpanded}
-        theme={theme}
-        onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")}
-      />
-      <main className={`main main-${page}`}>
-        {operationalPages.includes(page) && <OperationsPage key={page} op={operations} page={page === "ops-parking" ? "l-mobility" : page} onNavigate={navigateOperations} />}
-        {page === "map" && (
-          <MapPage data={data} region={region} setRegion={changeRegion} onNavigate={setPage} onDemoIncident={h => {
-            if (!h) return;
-            const c = REGIONS[region];
-            const city = {id:region, label:c.label, country:c.country, latitude:c.center[1], longitude:c.center[0]};
-            operations.selectCity(city);
-            operations.scenario("flood", {name:h.name, latitude:h.coord[1], longitude:h.coord[0], historical:true}, city);
-            setPage("l-incidents");
-          }} />
-        )}
-        {page === "register" && <RegisterPage data={data} onNavigate={setPage} />}
-        {page === "sources" && <SourcesPage data={data} onNavigate={setPage} />}
-        {page === "l-heat" && <HeatPage onNavigate={setPage} />}
-        {page === "l-mobility" && <MobilityPage />}
-        {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
-        {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
-        {page !== "l-heat" &&         page !== "l-flood" &&
-        page !== "l-fog" &&
-        page !== "l-mobility" && page.startsWith("l-") && (
-          <LegacyApp page={page.slice(2)} onNavigateRoute={setPage} />
-        )}
-      </main>
-    </div>
+    <PlaceProvider>
+      <div className={`shell ${railExpanded ? "rail-expanded" : ""}`}>
+        <Rail
+          page={page}
+          setPage={setPage}
+          expanded={railExpanded}
+          setExpanded={setRailExpanded}
+          theme={theme}
+          onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+        />
+        <main className={`main main-${page}`}>
+          {operationalPages.includes(page) && (
+            <OperationsPage
+              key={page}
+              op={operations}
+              page={page === "ops-parking" ? "l-mobility" : page}
+              onNavigate={navigateOperations}
+            />
+          )}
+          {page === "map" && (
+            <MapPage
+              data={data}
+              region={region}
+              setRegion={changeRegion}
+              onNavigate={setPage}
+              onDemoIncident={(h) => {
+                if (!h) return;
+                const c = REGIONS[region];
+                const city = {
+                  id: region,
+                  label: c.label,
+                  country: c.country,
+                  latitude: c.center[1],
+                  longitude: c.center[0],
+                };
+                operations.selectCity(city);
+                operations.scenario(
+                  "flood",
+                  { name: h.name, latitude: h.coord[1], longitude: h.coord[0], historical: true },
+                  city,
+                );
+                setPage("l-incidents");
+              }}
+            />
+          )}
+          {page === "register" && <RegisterPage data={data} onNavigate={setPage} />}
+          {page === "sources" && <SourcesPage data={data} onNavigate={setPage} />}
+          {page === "l-heat" && <HeatPage onNavigate={setPage} />}
+          {page === "l-mobility" && <MobilityPage />}
+          {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
+          {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
+          {page !== "l-heat" &&
+            page !== "l-flood" &&
+            page !== "l-fog" &&
+            page !== "l-mobility" &&
+            page.startsWith("l-") && <LegacyApp page={page.slice(2)} onNavigateRoute={setPage} />}
+          <PlaceInspector />
+        </main>
+      </div>
+    </PlaceProvider>
   );
 }

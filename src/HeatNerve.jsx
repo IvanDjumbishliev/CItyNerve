@@ -7,6 +7,7 @@ import {
 import HeatMap, { SUHI_STOPS, LST_STOPS, HEAT_VIEW } from './HeatMap.jsx';
 import { useHeatData } from './useHeatData.js';
 import ModuleTabs from './ModuleTabs.jsx';
+import { usePlaceMap } from './inspect/PlaceContext.jsx';
 import { RISK, riskLevel } from './data.js';
 
 const TZ = 'Europe/Sofia';
@@ -202,7 +203,8 @@ function HeatTopBar({ hotspots, onSelect, toggleDock, toggleLens, onNavigate }) 
 
 function HeatMapPage({ data, onNavigate }) {
   const { summary, hotspots } = data;
-  const [sceneId, setSceneId] = useState(null);
+  const [sceneId, setSceneId] = useState(() =>
+    new URLSearchParams(window.location.hash.split("?")[1] || "").get("scene"));
   const [mode, setMode] = useState('suhi');
   const [selectedId, setSelectedId] = useState(null);
   const [map, setMap] = useState(null);
@@ -212,6 +214,10 @@ function HeatMapPage({ data, onNavigate }) {
   const scene = summary?.scenes.find(s => s.id === sceneId) ?? null;
   const png = summary ? (scene?.png ?? summary.rasters.suhi) : null;
   const refC = scene ? scene.rural_ref_c : summary?.composite.rural_ref_c ?? 0;
+
+  usePlaceMap(map, {
+    cityId: "sofia", route: "heat-map", heat: { sceneId: scene?.id || null },
+  });
 
   useEffect(() => { if (selectedId) setLensOpen(true); }, [selectedId]);
   useEffect(() => {
