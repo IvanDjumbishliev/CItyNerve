@@ -249,6 +249,7 @@ function SettingsPage({ city, cityId, setCityId }) {
 export default function LegacyApp({ page, onNavigateRoute }) {
   const [cityId, setCityId] = useState("michalovce");
   const city = CITIES.find((item) => item.id === cityId) || CITIES[0];
+  const blankLivePage = page === "flood" || page === "fog";
   return (
     <div className="legacy">
       <div className="app-shell">
@@ -256,14 +257,16 @@ export default function LegacyApp({ page, onNavigateRoute }) {
           <Header city={city} setCityId={setCityId} page={page} onNavigateRoute={onNavigateRoute} />
           <main className="content">
             <div className="content-inner">
-              {MODULE_KEYS.includes(page) ? (
+              {!blankLivePage && MODULE_KEYS.includes(page) ? (
                 <ModulePage type={page} city={city} />
-              ) : page === "settings" ? (
+              ) : !blankLivePage && page === "settings" ? (
                 <SettingsPage city={city} cityId={cityId} setCityId={setCityId} />
               ) : null}
-              <footer className="app-footer">
-                <span>© 2026 CityNerve</span>
-              </footer>
+              {!blankLivePage && (
+                <footer className="app-footer">
+                  <span>© 2026 CityNerve</span>
+                </footer>
+              )}
             </div>
           </main>
         </div>
