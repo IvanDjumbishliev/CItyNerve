@@ -45,7 +45,6 @@ import {
   Maximize2,
   Wind,
 } from "lucide-react";
-import MobilityPage from "./MobilityPage.jsx";
 import OperationsPage from "./operations/OperationsPage.jsx";
 import { useOperations } from "./operations/useOperations.js";
 import HeatPage from "./HeatPage.jsx";
@@ -153,14 +152,14 @@ const RAIL_GROUPS = [
   {
     items: [
       ["l-incidents", "Incidents", Siren],
-      ["ops-parking", "Parking inventory", CarFront],
+      ["l-mobility", "Parking", CarFront],
+      ["l-traffic", "Traffic", Gauge],
       ["l-alert", "Smart boards", BellRing],
       ...HAZARD_MODULES.map((module) => [
         module.routes.map,
         module.navLabel,
         HAZARD_ICONS[module.icon],
       ]),
-      ["l-mobility", "Live parking", CarFront],
     ],
   },
 ];
@@ -1507,6 +1506,7 @@ export default function App() {
     if (["l-overview", "l-devices", "l-flood", "l-settings"].includes(initialRoute)) {
       return "operations";
     }
+    if (initialRoute === "ops-parking") return "l-mobility";
     if (initialRoute === "l-fog") return "fog-map";
     return initialRoute || "l-alert";
   }); // e.g. #heat-map
@@ -1517,7 +1517,7 @@ export default function App() {
   const sharedCityPending = useRef(readSelection(window.location.hash)?.cityId);
   const [railExpanded, setRailExpanded] = useState(false);
   const operations = useOperations();
-  const operationalPages = ["l-incidents", "ops-parking", "l-alert"];
+  const operationalPages = ["l-incidents", "l-mobility", "l-traffic", "l-alert"];
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try {
@@ -1553,7 +1553,7 @@ export default function App() {
       longitude: c.center[0],
     });
   };
-  const navigateOperations = (id) => setPage(id === "l-mobility" ? "ops-parking" : id);
+  const navigateOperations = (id) => setPage(id === "ops-parking" ? "l-mobility" : id);
   const data = useFloodData(region);
   return (
     <PlaceProvider>
@@ -1571,7 +1571,7 @@ export default function App() {
             <OperationsPage
               key={page}
               op={operations}
-              page={page === "ops-parking" ? "l-mobility" : page}
+              page={page}
               onNavigate={navigateOperations}
             />
           )}
@@ -1606,10 +1606,9 @@ export default function App() {
           {page === "l-heat" && <HeatPage onNavigate={setPage} />}
           {page === "l-air" && <AirPage onNavigate={setPage} />}
           {page.startsWith("air-") && <AirNerve page={page} onNavigate={setPage} />}
-          {page === "l-mobility" && <MobilityPage />}
           {page.startsWith("fog-") && <FogNerve page={page} onNavigate={setPage} />}
           {page.startsWith("heat-") && <HeatNerve page={page} onNavigate={setPage} />}
-          {page !== "l-heat" &&
+          {!operationalPages.includes(page) && page !== "l-heat" &&
             page !== "l-flood" &&
             page !== "l-fog" &&
             page !== "l-air" &&

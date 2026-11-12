@@ -39,6 +39,6 @@ export function trafficForBoard(board, snapshot, now = Date.now()) {
   if (!snapshot || snapshot.cityId !== board.cityId) return null;
   const row = snapshot.rows?.find(r => r.number === board.number);
   if (!row) return null;
-  if (row.status === 'ok' && (Date.parse(row.expiresAt) <= now || !Number.isFinite(Date.parse(row.fetchedAt)) || Date.parse(row.fetchedAt) > now + 60000)) return { ...row, status: 'stale', reason: 'Traffic reading expired.' };
+  if (row.status === 'ok' && (!Number.isFinite(Date.parse(row.expiresAt)) || Date.parse(row.expiresAt) <= now || !Number.isFinite(Date.parse(row.fetchedAt)) || Date.parse(row.fetchedAt) > now + 60000)) return { ...row, status: 'stale', reason: 'Traffic reading expired.' };
   return { ...row, boardId: board.id, cityId: board.cityId };
 }

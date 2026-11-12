@@ -215,11 +215,15 @@ Keep provider failures visible, preserve source timestamps, and label modeled or
 
 ### Parking inventory and board demonstrations
 
-**Live parking** uses operator availability feeds for supported cities. **Parking inventory** loads OpenStreetMap locations within 3.5 km of the selected city; its optional occupancy and closure controls are explicitly simulated and drive the smart-board previews. OSM does not supply live occupancy.
+The **Parking** tab combines operator availability feeds and the OpenStreetMap inventory in one map and searchable facility list, using the same selected city and live feed as the smart boards. Filter by operator feed, OSM locations, or simulation; inspect a facility for timestamps, capacity, access and directions. Supported provider cities remain available as shortcuts. The former `#ops-parking` link opens this unified view, as does `#l-mobility`.
+
+The inventory loads OSM locations within 3.5 km of the selected city. Optional occupancy and closure controls remain explicitly simulated and drive smart-board previews. OSM does not supply live occupancy. A unique nearby name match combines an OSM entry with an operator facility; proximity alone never transfers occupancy to another location. Stale counts are withheld, closed facilities are labelled, and simulated counts are excluded from the operator availability total.
 
 The inventory uses `/api/osm-parking` through the same Node middleware in `npm run dev`, `npm run preview`, and `npm start` (after `npm run build`). Restart Vite after changing server code. Static-only hosting needs this API service as well. Server requests identify CityNerve, allow up to 25 seconds per Overpass provider, and fail over across three public providers. Successful location inventories are cached for 24 hours in `.cache/osm-parking`; provider failures can reuse inventories up to seven days old, explicitly marked as older cached locations. Cached timestamps are preserved. A first request can take up to 75 seconds when providers are busy; an outage with no cache shows an error rather than invented locations.
 
 ### Live traffic on the Sofia smart boards
+
+The **Traffic** tab (`#l-traffic`) visualizes the existing feed on a map. Fresh matched segments are coloured by condition; numbered board markers and a searchable-by-condition sample list show average/free-flow speed, segment delay, confidence and retrieval time. Click a road or inspect a sample to focus the map. Grey markers identify unavailable, expired or unmatched readings; uncoloured roads are unassessed. Coverage is the fixed Sofia sample network, not a citywide traffic layer. The tab and smart boards share one polling hook and server cache.
 
 Set `TOMTOM_API_KEY` in the server environment or in the ignored `.env.local` file (see `.env.example`), then restart the server. The same `/api/traffic?city=sofia` service is used by Vite development, preview, and `npm start`. The key is never sent to the browser.
 
