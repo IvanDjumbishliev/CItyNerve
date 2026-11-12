@@ -32,7 +32,7 @@ export function demoBoards(city) {
     name: `${['North', 'East', 'South', 'West'][i]} illustrative approach`, road: 'Unsurveyed demo location', direction: `Toward ${city.label}`,
   }));
   return rows.map((b, i) => ({ ...b, id: `board:${city.id}:${b.id}`, cityId: city.id, number: i + 1, rangeKm: b.kind === 'urban' ? 2 : 4, halfAngle: 40, parkingRangeKm: 1.5,
-    routineMessage: `${b.kind === 'entrance' ? `WELCOME TO ${city.label.toUpperCase()}` : b.kind === 'exit' ? `LEAVING ${city.label.toUpperCase()}` : b.road.toUpperCase()}\nNO ACTIVE LOCAL ADVISORY` }));
+    routineMessage: `${b.kind === 'entrance' ? `WELCOME TO ${city.label.toUpperCase()}` : b.kind === 'exit' ? `LEAVING ${city.label.toUpperCase()}` : b.road.toUpperCase()}\nKEEP A SAFE DISTANCE` }));
 }
 
 export function boardDemoLocation(board) {

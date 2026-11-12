@@ -23,7 +23,7 @@ export default function OperationsMap({ city, boards, parking, incidents }) {
   useEffect(() => {
     if (!map.current || !ready) return;
     markers.current.forEach(m => m.remove());
-    markers.current = [...parking.slice(0, 40).map(p => ({ ...p, symbol: 'P', detail: 'OSM parking · occupancy unknown unless simulated', color: '#2563eb' })), ...boards.map(b => ({ ...b, symbol: String(b.number), detail: `${b.direction} (${b.heading}°) · demo placement\n${b.preview?.message ?? ''}\n${b.preview?.evidence ?? 'routine'}`, color: b.preview?.incident ? '#b45309' : '#0f766e' })), ...incidents.map(i => ({ ...i, name: i.title, symbol: '!', detail: i.evidence, color: '#b45309' }))].map(p => {
+    markers.current = [...parking.slice(0, 40).map(p => ({ ...p, symbol: 'P', detail: 'OSM parking · occupancy unknown unless simulated', color: '#2563eb' })), ...boards.map(b => ({ ...b, symbol: String(b.number), detail: `${b.direction} (${b.heading}°) · demo placement\n${b.preview?.message ?? ''}\n${b.preview?.evidence ?? 'routine'}`, color: (b.preview?.incident || (b.preview?.traffic && b.preview.traffic.kind !== 'flow') || b.preview?.air?.band >= 3) ? '#b45309' : '#0f766e' })), ...incidents.map(i => ({ ...i, name: i.title, symbol: '!', detail: i.evidence, color: '#b45309' }))].map(p => {
       const el = document.createElement('button'); el.className = 'ops-marker'; el.textContent = p.symbol; el.style.background = p.color; el.setAttribute('aria-label', p.name);
       if (Number.isFinite(p.heading)) {
         el.classList.add('ops-board-marker');

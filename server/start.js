@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
 import { parkingMiddleware } from "./parking.js";
 import { airMiddleware } from "./air.js";
+import { trafficMiddleware } from "./traffic.js";
 const root = resolve("dist");
 const types = {
   ".html": "text/html",
@@ -13,7 +14,7 @@ const types = {
   ".geojson": "application/geo+json",
 };
 const api = (req, res, next) =>
-  parkingMiddleware(req, res, () => airMiddleware(req, res, next));
+  parkingMiddleware(req, res, () => airMiddleware(req, res, () => trafficMiddleware(req, res, next)));
 createServer((req, res) =>
   api(req, res, async () => {
     try {

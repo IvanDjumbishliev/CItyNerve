@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_CITY, FORECAST_TTL, forecastEvents, reconcileForecast, mergeParking } from './engine.js';
 import { fetchWeather, fetchParking } from './api.js';
+import { useBoardAir } from './useBoardAir.js';
+import { useLiveParking } from './useLiveParking.js';
+import { useTraffic } from './useTraffic.js';
 const KEY = 'citynerve:operations:v1';
 function restore() {
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s?.version === 1 && Array.isArray(s.incidents) && Array.isArray(s.parking) && Number.isFinite(s.city?.latitude) && Number.isFinite(s.city?.longitude)) return s; } catch { /* storage unavailable */ }
@@ -8,6 +11,9 @@ function restore() {
 }
 export function useOperations() {
   const [state, setState] = useState(restore);
+  const air = useBoardAir(state.city);
+  const liveParking = useLiveParking(state.city);
+  const traffic = useTraffic(state.city);
   const [weather, setWeather] = useState(null), [weatherError, setWeatherError] = useState(''), [loading, setLoading] = useState(false);
   const [parkingError, setParkingError] = useState(''), [parkingLoading, setParkingLoading] = useState(false);
   const [parkingProgress, setParkingProgress] = useState('');
@@ -57,9 +63,16 @@ export function useOperations() {
   function scenario(type, location = null, targetCity = state.city) {
     const point = location ?? targetCity;
     const at = new Date().toISOString();
-    const incident = { id: `demo:${crypto.randomUUID()}`, cityId: targetCity.id, type, latitude: point.latitude, longitude: point.longitude, radiusKm: point.radiusKm ?? 3, title: `${type === 'closure' ? 'Demo: flood-related road closure' : 'Demo: local flood report'}${point.road ? ` · ${point.road}` : ''}`, message: type === 'closure' ? 'ROAD CLOSED AHEAD\nFLOODING · CHECK LOCAL DIVERSION' : 'FLOODING REPORTED AHEAD\nPROCEED WITH CAUTION', evidence: 'simulation', source: location?.historical ? 'Simulated event at historical model hotspot' : 'Simulated field report', context: location?.name ?? null, parkingId: location?.id && !location.historical && !location.boardId ? location.id : null, severity: 'warning', status: 'draft', createdAt: at, observedAt: at, expiresAt: new Date(Date.now() + 60 * 60000).toISOString() };
+    const templates = {
+      flood: ['local flood report', 'FLOODING AHEAD\nREDUCE SPEED'],
+      closure: ['flood-related road closure', 'ROAD CLOSED AHEAD\nFLOODING\nDO NOT PROCEED'],
+      fog: ['local fog report', 'FOG AHEAD\nREDUCE SPEED\nINCREASE GAP'],
+      congestion: ['traffic queue', 'QUEUE AHEAD\nREDUCE SPEED\nPREPARE TO STOP'],
+    };
+    const [label, message] = templates[type] ?? templates.flood;
+    const incident = { id: `demo:${crypto.randomUUID()}`, cityId: targetCity.id, type, latitude: point.latitude, longitude: point.longitude, radiusKm: point.radiusKm ?? 3, title: `Demo: ${label}${point.road ? ` · ${point.road}` : ''}`, message, evidence: 'simulation', source: location?.historical ? 'Simulated event at historical model hotspot' : 'Simulated field report', context: location?.name ?? null, parkingId: location?.id && !location.historical && !location.boardId ? location.id : null, severity: 'warning', status: 'draft', createdAt: at, observedAt: at, expiresAt: new Date(Date.now() + 60 * 60000).toISOString() };
     setState(s => ({ ...s, incidents: [incident, ...s.incidents].slice(0, 200) }));
   }
   function setIncidentStatus(id, status) { setState(s => ({ ...s, incidents: s.incidents.map(e => e.id === id ? { ...e, status, ...(status === 'published' ? { expiresAt: new Date(Date.now() + 60 * 60000).toISOString(), approvedAt: new Date().toISOString() } : { resolvedAt: new Date().toISOString() }) } : e) })); }
-  return { ...state, now, weather, weatherError, loading, parkingError, parkingLoading, parkingProgress, storageError, selectCity, refresh: () => setRevision(x => x + 1), loadParking, updateParking, scenario, setIncidentStatus, stale: !weather || now - weather.fetchedAt > FORECAST_TTL };
+  return { ...state, air, liveParking, traffic, now, weather, weatherError, loading, parkingError, parkingLoading, parkingProgress, storageError, selectCity, refresh: () => setRevision(x => x + 1), loadParking, updateParking, scenario, setIncidentStatus, stale: !weather || now - weather.fetchedAt > FORECAST_TTL };
 }

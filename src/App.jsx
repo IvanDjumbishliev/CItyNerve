@@ -32,7 +32,6 @@ import {
   CloudFog,
   ThermometerSun,
   CarFront,
-  LayoutDashboard,
   Siren,
   BellRing,
   Settings2,
@@ -154,7 +153,6 @@ const HAZARD_ICONS = { flood: RainIcon, fog: CloudFog, heat: ThermometerSun, air
 const RAIL_GROUPS = [
   {
     items: [
-      ["operations", "City operations", LayoutDashboard],
       ["l-incidents", "Incidents", Siren],
       ["ops-parking", "Parking inventory", CarFront],
       ["l-alert", "Smart boards", BellRing],
@@ -1515,11 +1513,11 @@ export default function App() {
   });
   const [page, setPage] = useState(() => {
     const initialRoute = window.location.hash.slice(1).split("?")[0];
-    if (["l-overview", "l-devices", "l-flood"].includes(initialRoute)) {
-      return "operations";
+    if (["operations", "l-overview", "l-devices", "l-flood"].includes(initialRoute)) {
+      return "l-alert";
     }
     if (initialRoute === "l-fog") return "fog-map";
-    return initialRoute || "operations";
+    return initialRoute || "l-alert";
   }); // e.g. #heat-map
   const [region, setRegion] = useState(() => {
     const city = readSelection(window.location.hash)?.cityId;
@@ -1528,7 +1526,7 @@ export default function App() {
   const sharedCityPending = useRef(readSelection(window.location.hash)?.cityId);
   const [railExpanded, setRailExpanded] = useState(false);
   const operations = useOperations();
-  const operationalPages = ["operations", "l-incidents", "ops-parking", "l-alert"];
+  const operationalPages = ["l-incidents", "ops-parking", "l-alert"];
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try {

@@ -17,12 +17,13 @@ export function forecastEvents(city, payload, now = Date.now()) {
   const values = key => indices.map(x => h[key]?.[x.i]).filter(Number.isFinite);
   const rain = values('precipitation'), visibility = values('visibility'), heat = values('apparent_temperature');
   const stats = { rainPeak: rain.length ? Math.max(...rain) : null, rainTotal: rain.length ? rain.reduce((a, b) => a + b, 0) : null, visibilityMin: visibility.length ? Math.min(...visibility) : null, heatMax: heat.length ? Math.max(...heat) : null, validFrom: new Date(indices[0].t).toISOString(), validTo: new Date(indices.at(-1).t + 3600000).toISOString() };
+  stats.hours = indices.map(({ t, i }) => ({ time: t, temperature: Number.isFinite(h.temperature_2m?.[i]) ? h.temperature_2m[i] : null, visibility: Number.isFinite(h.visibility?.[i]) ? h.visibility[i] : null, code: h.weather_code?.[i] ?? null }));
   const triggers = [
-    ['flood', rain.length && (stats.rainPeak >= RULES.rainHour || stats.rainTotal >= RULES.rainDay), 'Heavy-rain / potential flood-risk advisory', 'HEAVY RAIN EXPECTED\nFLOOD RISK · DRIVE WITH CARE'],
-    ['fog', visibility.length && stats.visibilityMin < RULES.visibility, 'Low visibility forecast', 'LOW VISIBILITY EXPECTED\nDRIVE WITH CARE'],
-    ['heat', heat.length && stats.heatMax >= RULES.apparentTemperature, 'High apparent temperature forecast', 'HEAT ADVISORY\nPLAN COOLER TRAVEL TIMES'],
+    ['flood', rain.length && (stats.rainPeak >= RULES.rainHour || stats.rainTotal >= RULES.rainDay), 'Heavy-rain / potential flood-risk advisory', 'HEAVY RAIN FORECAST\nWATCH FOR SURFACE WATER'],
+    ['fog', stats.hours.some(x => [45, 48].includes(x.code) || (x.visibility !== null && x.visibility < RULES.visibility)), 'Fog / low visibility forecast', 'LOW VISIBILITY EXPECTED\nREDUCE SPEED'],
+    ['heat', heat.length && stats.heatMax >= RULES.apparentTemperature, 'High apparent temperature forecast', 'HIGH TEMPERATURES\nCARRY DRINKING WATER'],
   ];
-  return { stats, events: triggers.filter(x => x[1]).map(([type, , title, message]) => ({ id: `forecast:${city.id}:${type}`, cityId: city.id, type, title, message, source: 'Open-Meteo forecast', evidence: 'forecast', severity: 'advisory', status: 'published', latitude: city.latitude, longitude: city.longitude, radiusKm: 15, observedAt: new Date(now).toISOString(), expiresAt: new Date(now + FORECAST_TTL).toISOString(), validFrom: stats.validFrom, validTo: stats.validTo, scope: 'City-area model forecast; local conditions may differ.' })) };
+  return { stats, events: triggers.filter(x => x[1]).map(([type, , title, message]) => ({ id: `forecast:${city.id}:${type}`, cityId: city.id, type, title, message, ...(type === 'fog' ? { hazardHours: stats.hours.filter(x => [45, 48].includes(x.code) || (x.visibility !== null && x.visibility < RULES.visibility)) } : {}), source: 'Open-Meteo forecast', evidence: 'forecast', severity: 'advisory', status: 'published', latitude: city.latitude, longitude: city.longitude, radiusKm: 15, observedAt: new Date(now).toISOString(), expiresAt: new Date(now + FORECAST_TTL).toISOString(), validFrom: stats.validFrom, validTo: stats.validTo, scope: 'City-area model forecast; local conditions may differ.' })) };
 }
 export function reconcileForecast(previous, events, cityId, now = Date.now()) {
   const ids = new Set(events.map(e => e.id));
@@ -46,15 +47,46 @@ export function isAhead(board, point, rangeKm = board.rangeKm ?? 3) {
   const difference = Math.abs(((bearingDegrees(board, point) - board.heading + 540) % 360) - 180);
   return difference <= (board.halfAngle ?? 40);
 }
-export function boardMessage(board, incidents, parking, now = Date.now()) {
-  const ranks = { closure: 4, flood: 3, fog: 2, heat: 1 };
-  const incident = incidents.filter(e => e.cityId === board.cityId && isActive(e, now) && distanceKm(board, e) <= e.radiusKm && (e.evidence === 'forecast' || isAhead(board, e)))
+export function boardWeather(board, weather, now = Date.now()) {
+  if (!weather || weather.cityId !== board.cityId || !Number.isFinite(weather.fetchedAt) || now - weather.fetchedAt >= FORECAST_TTL || weather.fetchedAt > now + 60000) return null;
+  const hour = weather.hours?.find(x => x.time <= now && now < x.time + 3600000);
+  if (!hour) return null;
+  return { ...hour, temperature: Number.isFinite(hour.temperature) ? Math.round(hour.temperature) : null, source: 'Open-Meteo · city-area hourly forecast', fetchedAt: weather.fetchedAt };
+}
+export function freshOperatorParking(p, now = Date.now()) {
+  const fresh = stamp => { const time = Date.parse(stamp); return Number.isFinite(time) && time <= now + 60000 && now - time < 5 * 60000; };
+  return p.live === true && p.status !== 'closed' && fresh(p.fetchedAt) && (p.measuredAt == null || fresh(p.measuredAt)) && Number.isInteger(p.free) && p.free >= 0 && (p.capacity == null || (Number.isInteger(p.capacity) && p.capacity >= p.free));
+}
+const nearFogHours = (event, now) => event.hazardHours?.filter(x => x.time + 3600000 > now && x.time <= now + 3 * 3600000);
+function roadMessage(event, now) {
+  if (event.evidence === 'forecast') {
+    if (event.type === 'fog') {
+      const hours = nearFogHours(event, now);
+      const fog = hours?.some(x => [45, 48].includes(x.code));
+      return `${fog ? 'FOG EXPECTED' : 'LOW VISIBILITY EXPECTED'}\nNEXT 3 HOURS\nREDUCE SPEED`;
+    }
+    return event.message;
+  }
+  return ({ closure: 'ROAD CLOSED AHEAD\nFLOODING\nDO NOT PROCEED', flood: 'FLOODING AHEAD\nREDUCE SPEED', fog: 'FOG AHEAD\nREDUCE SPEED\nINCREASE GAP', congestion: 'QUEUE AHEAD\nREDUCE SPEED\nPREPARE TO STOP' })[event.type] ?? event.message;
+}
+export function boardMessage(board, incidents, parking, now = Date.now(), air = null, traffic = null) {
+  const ranks = { closure: 5, flood: 4, fog: 3, congestion: 2, heat: 1 };
+  const incident = incidents.filter(e => e.cityId === board.cityId && isActive(e, now) && distanceKm(board, e) <= e.radiusKm && (e.evidence === 'forecast' || isAhead(board, e)) && !(e.evidence === 'forecast' && e.type === 'fog' && e.hazardHours && !nearFogHours(e, now).length))
     .sort((a, b) => (ranks[b.type] ?? 0) - (ranks[a.type] ?? 0) || Number(a.evidence === 'forecast') - Number(b.evidence === 'forecast') || distanceKm(board, a) - distanceKm(board, b))[0];
-  if (incident) return { message: incident.message, incident, evidence: incident.evidence, source: incident.source };
-  const p = parking.filter(x => x.cityId === board.cityId && x.simulated && Number.isFinite(x.capacity) && isAhead(board, x, board.parkingRangeKm ?? 1.5) && !incidents.some(e => e.cityId === board.cityId && e.type === 'closure' && e.parkingId === x.id && isActive(e, now)))
-    .sort((a, b) => distanceKm(board, a) - distanceKm(board, b))[0];
-  if (p) return { message: `${p.name}\n${Math.max(0, p.capacity - p.occupied)} SPACES · SIMULATED`, evidence: 'simulation', source: 'Nearby parking demo', parking: p };
-  return { message: board.routineMessage ?? 'CITY INFORMATION\nNO ACTIVE LOCAL ADVISORY', evidence: 'routine', source: 'CityNerve' };
+  const liveTraffic = traffic?.status === 'ok' && traffic.boardId === board.id && traffic.cityId === board.cityId && Date.parse(traffic.fetchedAt) <= now + 60000 && Date.parse(traffic.expiresAt) > now;
+  const trafficRank = liveTraffic ? traffic.kind === 'closure' ? 5 : traffic.kind === 'congestion' ? 2 : 0 : 0;
+  const trafficMessage = () => ({ message: traffic.message, traffic, evidence: 'traffic', source: 'TomTom Traffic' });
+  if (trafficRank > 0 && (!incident || trafficRank > (ranks[incident.type] ?? 0))) return trafficMessage();
+  if (incident) return { message: roadMessage(incident, now), incident, evidence: incident.evidence, source: incident.source };
+  const freshAir = air?.boardId === board.id && air.cityId === board.cityId && Date.parse(air.validFrom) <= now && Date.parse(air.expiresAt) > now;
+  const airMessage = () => ({ message: air.message, air, evidence: air.evidence, source: air.source });
+  if (freshAir && air.band >= 3) return airMessage();
+  const p = parking.filter(x => x.cityId === board.cityId && (x.live ? freshOperatorParking(x, now) : x.simulated && Number.isFinite(x.capacity)) && isAhead(board, x, x.live ? board.rangeKm ?? 3 : board.parkingRangeKm ?? 1.5) && !incidents.some(e => e.cityId === board.cityId && e.type === 'closure' && e.parkingId === x.id && isActive(e, now)))
+    .sort((a, b) => Number(!!b.live) - Number(!!a.live) || Number(a.free === 0) - Number(b.free === 0) || distanceKm(board, a) - distanceKm(board, b))[0];
+  if (p?.live) return { message: `${p.name.toUpperCase()}\n${p.free === 0 ? 'CAR PARK FULL' : `${p.free} SPACES`}`, evidence: 'reported', source: p.source, parking: p };
+  if (p) return { message: `${p.name.toUpperCase()}\n${Math.max(0, p.capacity - p.occupied)} SPACES`, evidence: 'simulation', source: 'Nearby parking demo', parking: p };
+  if (liveTraffic) return trafficMessage();
+  return { message: board.routineMessage ?? 'DRIVE SAFELY\nKEEP A SAFE DISTANCE', evidence: 'routine', source: 'CityNerve' };
 }
 export function normalizeParking(elements) {
   return elements.filter(e => e.tags?.amenity === 'parking' && !['private', 'no', 'customers', 'permit'].includes(e.tags.access)).map(e => {

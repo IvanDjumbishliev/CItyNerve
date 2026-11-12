@@ -40,7 +40,7 @@ test('published closures take precedence and expiry restores parking', () => {
   const parking = [{ ...city, cityId: city.id, id: 'p', name: 'Public lot', simulated: true, capacity: 50, occupied: 40 }];
   const b = { ...board, parkingId: 'p' };
   const closure = { ...event, id: 'closure', type: 'closure', message: 'ROAD CLOSED' };
-  assert.equal(boardMessage(b, [event, closure], parking, now).message, 'ROAD CLOSED');
+  assert.match(boardMessage(b, [event, closure], parking, now).message, /^ROAD CLOSED AHEAD/);
   assert.match(boardMessage(b, [event, closure], parking, now + 120000).message, /10 SPACES/);
 });
 test('OSM parking excludes restricted facilities and preserves unknown capacity', () => {

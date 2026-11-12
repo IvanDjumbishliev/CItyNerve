@@ -4,7 +4,7 @@ async function getJson(url, signal) {
   return response.json();
 }
 export async function fetchWeather(city, signal) {
-  const q = new URLSearchParams({ latitude: city.latitude, longitude: city.longitude, hourly: 'precipitation,visibility,apparent_temperature,temperature_2m', forecast_days: '3', timezone: 'GMT' });
+  const q = new URLSearchParams({ latitude: city.latitude, longitude: city.longitude, hourly: 'precipitation,visibility,apparent_temperature,temperature_2m,weather_code', forecast_days: '3', timezone: 'GMT' });
   return getJson(`https://api.open-meteo.com/v1/forecast?${q}`, signal);
 }
 export async function searchCities(name, signal) {
@@ -14,7 +14,7 @@ export async function searchCities(name, signal) {
 }
 // Same-origin service works in dev, preview, and npm start.
 export async function fetchParking(city, signal, { fetchImpl = fetch, onProgress = () => {} } = {}) {
-  onProgress('Loading OSM parking inventory (cached locations or public providers)…');
+  onProgress('Loading OSM parking inventory (cached locations or public providers)â€¦');
   const query = new URLSearchParams({ latitude: city.latitude, longitude: city.longitude });
   const response = await fetchImpl(`/api/osm-parking?${query}`, { signal });
   const data = await response.json();
